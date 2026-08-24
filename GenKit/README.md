@@ -70,9 +70,25 @@ M.tools = {
 
 ## 配置
 
-修改 `GenKit/init.lua` 中的路径配置：
+所有项目路径相关的配置集中在 `TestHelper/ExternalConfig/setting.lua`，由所有 Kit 共用。
+
+需要调整时，**改 `setting.lua` 即可**，不要改 `GenKit/init.lua`：
 
 ```lua
-M.PROJECT_ROOT = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]]
-M.SCRIPT_DIR = M.PROJECT_ROOT .. [[\Script]]
+return {
+    -- 被测业务项目根目录
+    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]],
+
+    -- TestHelper 工具根目录
+    testHelperRoot = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]],
+
+    -- 项目全局白名单文件（相对于 projectRoot）
+    projectGlobalsPath = [[Script\Setting\Project_Globals.lua]],
+}
 ```
+
+GenKit 启动时通过 `require("ExternalConfig.setting")` 读取上述字段，并派生：
+
+- `GenKit.PROJECT_ROOT` — 业务项目根目录
+- `GenKit.getScriptDir()` — Lua 源码目录
+- `GenKit.getProjectGlobalsOutputPath()` — Project_Globals.lua 绝对路径

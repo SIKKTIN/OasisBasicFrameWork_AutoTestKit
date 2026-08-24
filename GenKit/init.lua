@@ -2,17 +2,30 @@
 -- GenKit
 -- 项目代码生成工具套件
 --
--- 配置:
---   PROJECT_ROOT: Withdraw 项目根目录
---   SCRIPT_DIR:   Lua 源码目录
+-- 配置：
+--   路径相关配置统一从 ExternalConfig/setting.lua 读取
+--   设置方式见 README "配置" 一节
 -- ============================================================
 
 local M = {}
 
+-- 引入项目级配置
+local setting = require("ExternalConfig.setting")
+
 -- 项目根目录（WithDraw 项目）
-M.PROJECT_ROOT = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]]
+M.PROJECT_ROOT = setting.projectRoot
 
 -- Lua 源码目录
+function M.getScriptDir()
+    return M.PROJECT_ROOT .. [[\Script]]
+end
+
+-- Project_Globals.lua 输出绝对路径
+function M.getProjectGlobalsOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.projectGlobalsPath
+end
+
+-- 向后兼容字段（外部脚本可能直接读取 M.SCRIPT_DIR）
 M.SCRIPT_DIR = M.PROJECT_ROOT .. [[\Script]]
 
 -- 内置白名单（Lua 标准库 + 引擎 API）
@@ -47,9 +60,7 @@ function M.getProjectRoot()
     return M.PROJECT_ROOT
 end
 
-function M.getScriptDir()
-    return M.SCRIPT_DIR
-end
+-- getScriptDir() 已在上方用函数 getter 实现,这里不再重复定义
 
 -- ============================================================
 -- 工具函数
@@ -189,7 +200,7 @@ function M.previewProjectGlobals()
         return false, "未找到 Lua 文件", nil
     end
 
-    local outputPath = M.PROJECT_ROOT .. [[\Script\Setting\Project_Globals.lua]]
+    local outputPath = M.getProjectGlobalsOutputPath()
 
     print("")
     print("───────────────────────────────────────────────────────────")
@@ -223,7 +234,7 @@ end
 
 -- 确认写入 Project_Globals
 function M.writeProjectGlobalsConfirm(results)
-    local outputPath = M.PROJECT_ROOT .. [[\Script\Setting\Project_Globals.lua]]
+    local outputPath = M.getProjectGlobalsOutputPath()
 
     print("")
     print("  确认写入? [Y] 是  [N] 否: ", "")
