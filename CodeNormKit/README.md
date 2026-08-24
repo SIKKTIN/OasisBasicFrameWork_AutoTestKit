@@ -19,40 +19,30 @@ TestHelper/
     ├── rules.lua                            # 三个内置规则工厂
     ├── parser.lua                           # 文件 IO + 字符串工具（纯 Lua 标准库）
     │
-    ├── demo/                                # 自带 fixture（验证 Kit 自身正确性 + 用法示例）
-    │   ├── Run_Demo.lua                     # demo 入口（4 用例）
-    │   ├── System_Task_Bad.lua              # 6 处违规样本
-    │   ├── System_Task_Clean.lua            # 0 违规样本
-    │   ├── System_Task_Comment.lua          # 注释豁免样本
-    │   ├── System_Player_Bad.lua            # 多 owner 样本（7 处违规）
-    │   ├── Task_Privates.lua                # Task 包私有声明
-    │   └── Multi_Privates.lua               # 多 owner 私有声明
-    │
     └── testsuite/                           # 业务包用例（日常检测用）
         ├── Run_All.lua                      # 唯一 Lua 入口
-        ├── Cases/
-        │   └── Index.lua                    # 手动 require 注册表（新增被测包改这里）
-        └── registry/
-            └── CountDown.lua
-```
+        └── Cases/
+            └── Index.lua                    # 从配置加载测试用例
 
-> **demo/ 与 testsuite/ 的区别**
->
-> | 入口 | 跑什么 | 用途 |
-> |------|--------|------|
-> | `demo/Run_Demo.lua` | 4 个 Kit 自带 fixture | 验证 Kit 规则 + 用法示例 |
-> | `testsuite/Run_All.lua` | 业务包（如 CountDown） | 业务包日常 Lint |
->
-> 两者互不耦合——demo 不出现在 Run_All，业务包不出现在 demo。
+ExternalConfig/                              # 配置文件（独立于 CodeNormKit）
+    ├── setting.lua                         # 项目路径配置
+    └── tests.lua                          # 测试用例配置
+```
 
 ## 配置
 
-CodeNormKit 通过两条途径拿到"被测业务项目根"：
+项目路径通过 `ExternalConfig/setting.lua` 管理：
 
-1. **`init.lua` 顶部常量 `M.PROJECT_ROOT`** — 默认值写在那里，直接改一行即可（推荐）
-2. **`CodeNormKit_Runner.ps1` 顶部变量 `$PROJECT_ROOT`** — 启动器用此值设置 cwd 与 package.path
+```lua
+-- ExternalConfig/setting.lua
+return {
+    projectRoot = [[E:\WeGameApps\...]],     -- 被测业务项目根
+    testHelperRoot = [[E:\...\TestHelper]],  -- TestHelper 工具根
+    projectGlobalsPath = [[Script\...]],     -- 项目全局白名单文件
+}
+```
 
-两条必须指向同一个项目根（Withdraw）。
+支持通过 ps1 launcher 的 `-e` 参数运行时覆盖。
 
 ## 用法
 
@@ -189,34 +179,24 @@ lua TestHelper/CodeNormKit/testsuite/Run_All.lua
 lua TestHelper/CodeNormKit/testsuite/Run_All.lua CountDown
 ```
 
-### demo/ — 验证 Kit 自身
+### testsuite/ 新增被测包
 
-```bash
-cd /d "E:\Project\AgentHelper\WithDrawCache"
-lua TestHelper/CodeNormKit/demo/Run_Demo.lua
-```
-
-跑 4 个用例：Task Bad（6 违规）、Task Clean（0）、Task Comment 豁免（0）、Player 多 owner（7 违规）。
-
-### testsuite/ 新增被测包（2 步）
-
-1. 在 `TestHelper/CodeNormKit/testsuite/registry/` 下加一个 `<Pkg>.lua`：
+在 `ExternalConfig/tests.lua` 中添加配置：
 
 ```lua
-package.path = package.path .. ";./TestHelper/CodeNormKit/?.lua"
-local CodeNorm = require("init")
-
-CodeNorm.RegisterPackage("Pkg")
-CodeNorm.Expect("Pkg", "System_Pkg.lua", { count = 0, label = "Pkg / System_Pkg.lua" })
+return {
+    {
+        package = "MyPkg",
+        tests = {
+            {
+                path = "Script/Package/MyPkg/System/System_MyPkg.lua",
+                count = 0,
+                label = "MyPkg / System_MyPkg.lua",
+            },
+        },
+    },
+}
 ```
-
-2. 在 `TestHelper/CodeNormKit/testsuite/Cases/Index.lua` 加一行 `require`：
-
-```lua
-require("registry.Pkg")
-```
-
-完成。无需改 ps1。
 
 ## require 约定
 
@@ -228,13 +208,13 @@ local parser   = require("parser")      -- parser.lua
 local rules    = require("rules")       -- rules.lua
 ```
 
-各入口文件（`Run_All.lua` / `Run_Demo.lua` / `cases/*.lua` / `registry/*.lua`）顶部都加了：
+各入口文件（`Run_All.lua` / `Cases/Index.lua`）顶部都加了：
 
 ```lua
-package.path = package.path .. ";./TestHelper/CodeNormKit/?.lua" .. ";./?.lua"
+package.path = package.path .. ";./TestHelper/CodeNormKit/?.lua"
 ```
 
-`CodeNormKit_Runner.ps1` 额外把 `testsuite/` 与 `demo/` 也加进 `package.path`，所以 `registry.CountDown` 这类跨子目录 require 也能解析。
+`CodeNormKit_Runner.ps1` 额外把 `testsuite/` 加进 `package.path`。
 
 ## 依赖
 

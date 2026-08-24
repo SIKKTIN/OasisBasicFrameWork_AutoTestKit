@@ -2,20 +2,21 @@
 -- init.lua
 -- CodeNormKit 主入口
 --
--- 设计 B：两步注册
---   Step 1: CodeNorm.RegisterPackage(name, opts?)   声明一个被测包
---           自动推导 system/privates 路径，也可 opts 显式覆盖
---   Step 2: CodeNorm.Expect(packageName, systemFile, opts?)
---           注册"期望：某个 system 文件有多少违规"
---   Run + PrintReport:  跑全部 + 友好打印
+-- 设计 C：JSON 配置式注册
+--   LoadSettings()      - 加载项目配置（自动探测）
+--   LoadTests(configPath)  - 从外部配置加载测试用例
+--   Run + PrintReport     - 跑全部 + 友好打印
 --
--- 保留:  RunLint(target, privates, projectRoot?) 即兴单文件入口
---        CountViolations(...)              便利包装
+-- 保留（兼容旧用法）:
+--   RegisterPackage(name, opts?)
+--   Expect(packageName, opts?)
+--   RunLint(target, privates, projectRoot?)
+--   CountViolations(...)
 --
 -- 路径说明：
---   - CodeNormKit 本身位于 TestHelper/CodeNormKit/，完全独立于业务项目
---   - PROJECT_ROOT 指向被测业务项目（Withdraw），所有 system/privates 路径都基于它
---   - getProjectRoot() 直接返回 PROJECT_ROOT，不再用 __FILE__ 反推
+--   - 配置集中管理在 ExternalConfig/setting.lua
+--   - 支持通过 ps1 launcher 的 -e 参数覆盖配置值
+--   - 配置文件使用 Lua 语法，支持 return { ... } 格式
 -- ============================================================
 
 -- 关键：CodeNormKit 目录加入 package.path，使 init/parser/rules 可用纯文件名 require
@@ -38,21 +39,71 @@ M.RULE_DESCRIPTIONS = {
 }
 
 -- ============================================================
--- 项目根（被测业务项目的绝对路径）
+-- 项目配置（从 ExternalConfig/setting.lua 加载）
+-- 支持运行时通过 -e 参数注入覆盖
 -- ============================================================
--- CodeNormKit 部署在 TestHelper/CodeNormKit/，与业务项目分离。
--- 这里必须显式指向被测项目（Withdraw），不能依赖 __FILE__ 反推。
--- ps1 launcher 也会把此值用 -e 注入；手动改这里也能跑。
-M.PROJECT_ROOT = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]]
 
--- 动态加载项目级全局白名单
-local projectGlobalsPath = M.PROJECT_ROOT .. [[\Script\Setting\Project_Globals.lua]]
-local success, projectGlobals = pcall(dofile, projectGlobalsPath)
-if success then
-    M.Project_Globals = projectGlobals or {}
-else
-    M.Project_Globals = {}
+-- 默认值（会从配置覆盖）
+M.PROJECT_ROOT = nil
+M.TEST_HELPER_ROOT = nil
+
+-- 加载项目配置
+function M.LoadSettings()
+    -- 自动探测配置路径（相对于 __FILE__ 反推）
+    local function scriptAbsDir()
+        local info = debug.getinfo(1, "S")
+        local p = info.source:match("@(.*)") or ""
+        if not p:match("^%a:") and not p:match("^[/\\]") then
+            local pwd = io.popen("cd"):read("*all"):gsub("[\r\n]", "")
+            p = pwd .. "\\" .. p
+        end
+        return (p:gsub("\\", "/"):match("(.*/)") or "./")
+    end
+    local kitRoot = scriptAbsDir()                            -- .../CodeNormKit/ 或 .../CodeNormKit/testsuite/
+    -- 如果在 testsuite 子目录，上两级；否则上一级
+    local testHelperRoot
+    if kitRoot:match("CodeNormKit/testsuite/$") then
+        testHelperRoot = kitRoot .. "../../"                  -- testsuite -> CodeNormKit -> TestHelper
+    else
+        testHelperRoot = kitRoot .. "../"                    -- CodeNormKit -> TestHelper
+    end
+
+    -- 优先用运行时注入的值（ps1 launcher -e 参数），否则从配置文件加载
+    if M.PROJECT_ROOT == nil or M.TEST_HELPER_ROOT == nil then
+        local configPath = testHelperRoot .. "ExternalConfig/setting.lua"
+        local f, err = io.open(configPath, "r")
+        if f then
+            local content = f:read("*a")
+            f:close()
+            local chunk, loadErr = load(content, "@" .. configPath)
+            if chunk then
+                local cfg = chunk()
+                if M.PROJECT_ROOT == nil then
+                    M.PROJECT_ROOT = cfg.projectRoot
+                end
+                if M.TEST_HELPER_ROOT == nil then
+                    M.TEST_HELPER_ROOT = cfg.testHelperRoot
+                end
+            end
+        end
+    end
+
+    -- 兜底：未配置则使用自动探测值
+    M.PROJECT_ROOT = M.PROJECT_ROOT or ([[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]])
+    M.TEST_HELPER_ROOT = M.TEST_HELPER_ROOT or testHelperRoot
+
+    -- 动态加载项目级全局白名单
+    local projectGlobalsPath = M.PROJECT_ROOT .. [[\Script\Setting\Project_Globals.lua]]
+    local success, projectGlobals = pcall(dofile, projectGlobalsPath)
+    if success then
+        M.Project_Globals = projectGlobals or {}
+    else
+        M.Project_Globals = {}
+    end
 end
+
+-- 初始化时自动加载配置
+M.LoadSettings()
 
 function M.getProjectRoot()
     return M.PROJECT_ROOT
@@ -293,6 +344,108 @@ function M.PrintReport(results, opts)
         results.pass, results.total,
         results.allOk and "  全部通过" or string.format("  （%d 失败）", results.fail)))
     print(string.rep("═", 72))
+end
+
+-- ============================================================
+-- LoadTests: 从外部 Lua 配置加载测试用例
+-- @param configPath string   配置文件路径（绝对或相对路径）
+--                          相对路径基于 projectRoot
+-- @param projectRoot string   项目根目录
+-- 配置格式:
+--   {
+--       package = "包名",
+--       systemDir? = "覆盖的 system 目录",
+--       privatesPath? = "覆盖的 privates 文件",
+--       tests = {
+--           { path, count?, label? },
+--           ...
+--       }
+--   }
+--
+-- 路径前缀约定:
+--   @@TestHelper/  - 相对于 TestHelper 根目录（用于 fixtures 等工具资源）
+--   其他           - 相对于 projectRoot（被测业务项目）
+-- ============================================================
+function M.LoadTests(configPath, projectRoot)
+    projectRoot = projectRoot or M.getProjectRoot()
+    local fullPath = configPath
+
+    -- 相对路径基于 projectRoot
+    if not fullPath:match("^%a:") and not fullPath:match("^[/\\]") then
+        fullPath = projectRoot .. "\\" .. fullPath:gsub("/", "\\")
+    end
+
+    local f, err = io.open(fullPath, "r")
+    if not f then
+        error("LoadTests: 无法打开配置文件: " .. err)
+    end
+
+    local content = f:read("*a")
+    f:close()
+
+    -- 用 load 加载配置（支持 return { ... } 格式）
+    local chunk, loadErr = load(content, "@" .. fullPath)
+    if not chunk then
+        error("LoadTests: 配置语法错误: " .. loadErr)
+    end
+
+    local config = chunk()
+    if type(config) ~= "table" then
+        error("LoadTests: 配置必须返回数组或表")
+    end
+
+    -- 确保 entries 是数组格式
+    local entries = config
+    if #entries == 0 then
+        -- 如果是键值对格式 { key = {package, tests} }，转为数组
+        entries = {}
+        for k, v in pairs(config) do
+            if type(v) == "table" then
+                v._key = k
+                entries[#entries + 1] = v
+            end
+        end
+    end
+
+    for _, entry in ipairs(entries) do
+        local pkg = entry.package
+        if not pkg or pkg == "" then
+            -- 跳过无效条目
+        else
+            -- 注册包（privatesPath 中的 @@TestHelper/ 前缀需要特殊处理）
+            local privatesPath = entry.privatesPath
+            if privatesPath and privatesPath:match("^@@TestHelper/") then
+                -- 转换为相对于 TEST_HELPER_ROOT 的路径
+                privatesPath = M.TEST_HELPER_ROOT .. "\\" .. privatesPath:gsub("^@@TestHelper/", ""):gsub("/", "\\")
+            end
+            M.RegisterPackage(pkg, {
+                systemDir    = entry.systemDir,
+                privatesPath = privatesPath,
+            })
+
+            -- 注册测试用例（targetPath 同样处理 @@TestHelper/ 前缀）
+            local tests = entry.tests
+            if tests then
+                for _, test in ipairs(tests) do
+                    local path = test.path
+                    if path then
+                        -- targetPath 也支持 @@TestHelper/ 前缀
+                        local resolvedPath = path
+                        if path:match("^@@TestHelper/") then
+                            resolvedPath = M.TEST_HELPER_ROOT .. "\\" .. path:gsub("^@@TestHelper/", ""):gsub("/", "\\")
+                        end
+                        M.Expect(pkg, {
+                            path  = resolvedPath,
+                            count = test.count,
+                            label = test.label,
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    return #entries
 end
 
 return M
