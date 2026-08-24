@@ -45,6 +45,15 @@ M.RULE_DESCRIPTIONS = {
 -- ps1 launcher 也会把此值用 -e 注入；手动改这里也能跑。
 M.PROJECT_ROOT = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]]
 
+-- 动态加载项目级全局白名单
+local projectGlobalsPath = M.PROJECT_ROOT .. [[\Script\Setting\Project_Globals.lua]]
+local success, projectGlobals = pcall(dofile, projectGlobalsPath)
+if success then
+    M.Project_Globals = projectGlobals or {}
+else
+    M.Project_Globals = {}
+end
+
 function M.getProjectRoot()
     return M.PROJECT_ROOT
 end

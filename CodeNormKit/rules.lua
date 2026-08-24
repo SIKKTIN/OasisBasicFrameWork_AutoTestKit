@@ -19,6 +19,11 @@
 
 local parser = require("parser")
 
+-- 直接加载项目级全局白名单（避免与 init.lua 循环引用）
+local PROJECT_GLOBALS_PATH = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw\Script\Setting\Project_Globals.lua]]
+local ok, projectGlobals = pcall(dofile, PROJECT_GLOBALS_PATH)
+local PROJECT_GLOBALS = ok and projectGlobals or {}
+
 local M = {}
 
 -- 默认 appliesTo：所有包类型都适用
@@ -168,9 +173,8 @@ function M.makeDetectGlobalUsageRule()
                 ["require"] = true,
             }
 
-            -- ④ 已知 globals 白名单（游戏引擎 API / 项目级已知全局）
-            -- 来自绿洲编辑器 UGC 运行时环境
-            local KNOWN_GLOBALS = {
+            -- ④ 引擎内置全局（游戏引擎 API，不随项目变化）
+            local ENGINE_BUILTINS = {
                 -- 引擎全局表/函数
                 ["ugcprint"] = true, ["print"] = true,
                 ["UGCGameSystem"] = true,
@@ -186,18 +190,12 @@ function M.makeDetectGlobalUsageRule()
                 ["AsyncService"] = true,
                 ["LogService"] = true,
                 ["UnrealNetwork"] = true,    -- 网络 RPC
-                ["Util_EnumManager"] = true, -- 枚举管理器
+
                 -- require 路径前缀（字符串字面量中的大写前缀会被误报）
-                ["Script"] = true, ["Package"] = true,
-                ["Config"] = true, ["Suites"] = true, ["System"] = true,
-                -- 项目公共全局
-                ["SuiteIndex"] = true,    -- AutoTestKit 套件索引
-                ["Assert"] = true,        -- AutoTestKit 断言表
-                ["TAssert"] = true,       -- AutoTestKit 断言表（local 别名，保留）
-                ["AutoTestKit"] = true,   -- 包名前缀（字符串字面量中的路径会被误报）
+                ["Script"] = true, 
             }
 
-            -- ④ 收集所有 global 表引用（X.Y，其中 Y 以大写字母开头）
+            -- ⑤ 收集所有 global 表引用（X.Y，其中 Y 以大写字母开头）
             -- [^%w_]+：X 前面必须是空格/括号/逗号等非单词字符（但不能是下划线，下划线开头不算词边界）
             -- ([A-Z][a-zA-Z0-9_]*)：捕获大写开头的 identifier
             -- [.:]：X 和 Y 之间是 . 或 :
@@ -217,7 +215,7 @@ function M.makeDetectGlobalUsageRule()
             for _, line in ipairs(lines) do
                 if parser.isCodeLine(line) then
                     for ident, sep in line:gmatch("([A-Z][a-zA-Z0-9_]*)([.:][A-Z])") do
-                        if not seen[ident] and not ident:match("^_") and not localSet[ident] and not KNOWN_GLOBALS[ident] then
+                        if not seen[ident] and not ident:match("^_") and not localSet[ident] and not ENGINE_BUILTINS[ident] and not PROJECT_GLOBALS[ident] then
                             local shouldCapture = false
 
                             if ident:match("_") then
@@ -267,7 +265,7 @@ function M.makeDetectGlobalUsageRule()
                         local pos = line:find(fn, 1, true)
                         local before = line:sub(1, pos - 1)
                         if not localSet[fn] and not LUA_KEYWORDS[fn] and not LUA_BUILTINS[fn]
-                           and not KNOWN_GLOBALS[fn]
+                           and not ENGINE_BUILTINS[fn] and not PROJECT_GLOBALS[fn]
                            and (before == "" or before:match("[^%w]$")) then
                             globalFuncs[fn] = true
                         end

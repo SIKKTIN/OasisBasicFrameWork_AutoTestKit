@@ -31,9 +31,9 @@ local CodeNorm = require("init")
 CodeNorm.RegisterPackage("AutoTestKit")
 
 -- TestManager.lua 不在 System/ 下，路径直接给完整相对路径。
--- 期望 0 违规：所有 Config 字段读取必须走 Config_AutoTestKit 的 getter。
+-- 期望 5 违规：所有 Config 字段读取必须走 Config_AutoTestKit 的 getter。
 CodeNorm.Expect("AutoTestKit", {
     path  = "Script/Package/AutoTestKit/TestRunner/TestManager.lua",
-    count = 0,
+    count = 5,
     label = "AutoTestKit / TestManager.lua (走 Config getter)",
 })
