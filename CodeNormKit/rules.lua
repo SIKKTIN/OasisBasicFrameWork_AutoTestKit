@@ -28,14 +28,16 @@ end
 
 -- 规则 1: 禁止通过 table[i] 直接索引私有表
 -- 检测模式: <owner>.<tblName>[
+-- privates: parser.loadPrivates 返回值（result.decls = 等价 decl 数组）
 function M.makeForbidTableIndexRule(privates)
+    local decls = privates.decls or privates          -- 兼容：旧调用方可能直接传数组
     return {
         id          = "forbid_table_index",
         description = "禁止直接索引私有表",
         appliesTo   = appliesToAll,
         check = function(lines)
             local violations = {}
-            for _, decl in ipairs(privates) do
+            for _, decl in ipairs(decls) do
                 for _, tbl in ipairs(decl.privateTables or {}) do
                     local pattern = parser.escapePattern(decl.owner)
                         .. "%." .. parser.escapePattern(tbl.name) .. "%["
@@ -58,13 +60,14 @@ end
 -- 规则 2: 禁止直接读取私有字段
 -- 检测模式: <any>.<field> （使用 frontier pattern 避免子串误报）
 function M.makeForbidFieldReadRule(privates)
+    local decls = privates.decls or privates
     return {
         id          = "forbid_field_read",
         description = "禁止直接读取私有字段",
         appliesTo   = appliesToAll,
         check = function(lines)
             local violations = {}
-            for _, decl in ipairs(privates) do
+            for _, decl in ipairs(decls) do
                 for _, tbl in ipairs(decl.privateTables or {}) do
                     for _, field in ipairs(tbl.fields or {}) do
                         local pattern = "[%w_]+%." .. parser.escapePattern(field) .. "%f[%W]"
@@ -88,13 +91,14 @@ end
 -- 规则 3: 禁止使用 # 取私有表长度
 -- 检测模式: #<owner>.<tblName>
 function M.makeForbidTableLengthRule(privates)
+    local decls = privates.decls or privates
     return {
         id          = "forbid_table_length",
         description = "禁止用 # 取私有表长度",
         appliesTo   = appliesToAll,
         check = function(lines)
             local violations = {}
-            for _, decl in ipairs(privates) do
+            for _, decl in ipairs(decls) do
                 for _, tbl in ipairs(decl.privateTables or {}) do
                     local pattern = "#" .. parser.escapePattern(decl.owner)
                         .. "%." .. parser.escapePattern(tbl.name)
