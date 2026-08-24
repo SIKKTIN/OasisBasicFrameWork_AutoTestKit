@@ -30,10 +30,11 @@ local CodeNorm = require("init")
 -- 声明被测包：自动推导 privates / system 路径
 CodeNorm.RegisterPackage("CountDown")
 
--- Declare expectation: System_CountDown.lua must produce 1 violation
--- Registry_CountDown is used but not declared as local (global usage).
+-- CountDown 包声明了 dependsOn = {"Registry_CountDown"}
+-- 所以 Registry_CountDown 的使用不再是违规
+-- 期望 0 违规（所有 global 都已在 dependsOn 中声明）
 CodeNorm.Expect("CountDown", {
     path  = "Script/Package/CountDown/System/System_CountDown.lua",
-    count = 1,
+    count = 0,
     label = "CountDown / System_CountDown.lua",
 })

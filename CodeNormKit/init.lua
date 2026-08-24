@@ -76,11 +76,10 @@ end
 -- @param privatesFile string       相对路径
 -- @param projectRoot string|nil
 -- @param packageKind string|nil    当前 target 所属包的类型（"owner"/"orchestrator"/...）
---                                  缺省值 "owner"（向后兼容）
---                                  由 Run 从 Package_Meta 顶层字段读出后传入
+-- @param dependsOn string[]|nil    当前包允许的全局表依赖（来自 Package_Meta.dependsOn）
 -- @return violations array        每项 { line, text, rule }
 -- ============================================================
-function M.RunLint(targetFile, privatesFile, projectRoot, packageKind)
+function M.RunLint(targetFile, privatesFile, projectRoot, packageKind, dependsOn)
     projectRoot = projectRoot or M.getProjectRoot()
     packageKind = packageKind or "owner"
     local privates = parser.loadPrivates(projectRoot, privatesFile)
@@ -88,7 +87,8 @@ function M.RunLint(targetFile, privatesFile, projectRoot, packageKind)
     local lines    = parser.splitLines(source)
 
     -- 胶水包不豁免：所有规则都按"当前 kind 适用性"判定
-    local ruleList = rules.makeDefaultRules(privates)
+    -- dependsOn 决定规则四（global 检测）的允许范围
+    local ruleList = rules.makeDefaultRules(privates, dependsOn)
     local allViolations = {}
     for _, rule in ipairs(ruleList) do
         if rule.appliesTo(packageKind) then
@@ -100,8 +100,8 @@ function M.RunLint(targetFile, privatesFile, projectRoot, packageKind)
     return allViolations
 end
 
-function M.CountViolations(targetFile, privatesFile, projectRoot, packageKind)
-    return #M.RunLint(targetFile, privatesFile, projectRoot, packageKind)
+function M.CountViolations(targetFile, privatesFile, projectRoot, packageKind, dependsOn)
+    return #M.RunLint(targetFile, privatesFile, projectRoot, packageKind, dependsOn)
 end
 
 -- ============================================================
@@ -202,9 +202,10 @@ function M.Run(projectRoot, opts)
         if not pkg then
             caseResult.error = "Package not registered: " .. exp.packageName
         else
-            -- 从 Package_Meta 顶层读 packageKind，决定哪些规则对本 target 生效
+            -- 从 Package_Meta 顶层读取 packageKind 和 dependsOn
             local packageKind = parser.readPackageKind(projectRoot, caseResult.privatesPath) or "owner"
-            local ok, result = pcall(M.RunLint, caseResult.targetPath, caseResult.privatesPath, projectRoot, packageKind)
+            local dependsOn   = parser.readDependsOn(projectRoot, caseResult.privatesPath)
+            local ok, result = pcall(M.RunLint, caseResult.targetPath, caseResult.privatesPath, projectRoot, packageKind, dependsOn)
             if not ok then
                 caseResult.error = tostring(result)
             else

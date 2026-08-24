@@ -104,13 +104,30 @@ function M.extractGlobalDefs(content)
     return globals
 end
 
+-- 将绝对路径转换为相对于 Script/ 的路径
+-- 例如: E:\...\Withdraw\Script\Package\CountDown\Config\Config_CountDown.lua
+--   -> Package/CountDown/Config/Config_CountDown
+function M.absPathToRelative(absPath)
+    -- 移除驱动器盘符和反斜杠，统一为正斜杠
+    -- E:\...\Withdraw\Script\Package\... -> .../Withdraw/Script/Package/...
+    local normalized = absPath:gsub("\\", "/"):gsub("^[A-Za-z]:", "")
+    -- 匹配路径中任意位置的 /Script/ 子目录
+    -- 保留 /Script/ 后面的部分
+    local rel = normalized:match("[/\\]Script[/\\](.+)")
+    if rel then
+        -- 移除 .lua 后缀
+        return rel:gsub("%.lua$", "")
+    end
+    return nil
+end
+
 -- ============================================================
 -- 生成器: Project_Globals
 -- ============================================================
 
 function M.genProjectGlobals()
     local results = {
-        found = {},
+        found = {},  -- { [name] = { name = name, source = "Package/..." }, ... }
         totalFiles = 0,
         success = true,
         error = nil,
@@ -132,8 +149,13 @@ function M.genProjectGlobals()
             f:close()
 
             local globals = M.extractGlobalDefs(content)
+            local relPath = M.absPathToRelative(filePath)
+
             for name in pairs(globals) do
-                results.found[name] = true
+                results.found[name] = {
+                    name = name,
+                    source = relPath,
+                }
             end
         end
     end
@@ -183,7 +205,10 @@ function M.previewProjectGlobals()
 
     local maxShow = math.min(#results.sorted, 20)
     for i = 1, maxShow do
-        print(string.format("  [%d] %s", i, results.sorted[i]))
+        local name = results.sorted[i]
+        local info = results.found[name]
+        print(string.format("  [%d] %s", i, name))
+        print(string.format("      -> %s", info.source))
     end
 
     if #results.sorted > 20 then
@@ -223,14 +248,26 @@ function M.writeProjectGlobalsConfirm(results)
 
     f:write("-- ============================================================\n")
     f:write("-- Project_Globals.lua\n")
-    f:write("-- 项目级全局变量白名单\n")
+    f:write("-- 项目级全局变量白名单 + 来源路径\n")
     f:write("-- 由 GenKit 自动生成\n")
+    f:write("-- ============================================================\n")
+    f:write("--\n")
+    f:write("-- 格式:\n")
+    f:write("--   name   全局变量名\n")
+    f:write("--   source 相对于 Script/ 的路径\n")
+    f:write("--\n")
+    f:write("-- Package_Meta.dependsOn 中使用 name 字段值\n")
+    f:write("-- 检查工具根据 name 查找 source 定位文件\n")
     f:write("-- ============================================================\n")
     f:write("\n")
     f:write("local Project_Globals = {\n")
 
     for _, name in ipairs(results.sorted) do
-        f:write('    ["' .. name .. '"] = true,\n')
+        local info = results.found[name]
+        f:write(string.format('    ["%s"] = {\n', name))
+        f:write(string.format('        name = "%s",\n', name))
+        f:write(string.format('        source = "%s",\n', info.source))
+        f:write("    },\n")
     end
 
     f:write("}\n")

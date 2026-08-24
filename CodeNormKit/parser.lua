@@ -114,6 +114,19 @@ function M.readPackageDescription(projectRoot, privatesPath)
     return raw.description
 end
 
+-- 便捷读取：顶层 dependsOn（依赖的全局表名数组）
+-- 返回值: string[] | nil
+-- 如果文件没有 dependsOn 字段，返回 nil（规则四会回退到全局白名单）
+function M.readDependsOn(projectRoot, privatesPath)
+    local ok, raw = pcall(M.loadPrivates, projectRoot, privatesPath)
+    if not ok or type(raw) ~= "table" then return nil end
+    local deps = raw.dependsOn
+    if type(deps) == "table" and #deps > 0 then
+        return deps
+    end
+    return nil
+end
+
 -- 按 \n 拆分内容为行数组（保留空行用于行号对齐）
 function M.splitLines(content)
     local lines = {}

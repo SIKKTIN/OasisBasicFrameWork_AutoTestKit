@@ -124,7 +124,24 @@ function M.makeForbidTableLengthRule(privates)
 end
 
 -- 规则 4: 检测 global 引用（未声明的外部变量）
-function M.makeDetectGlobalUsageRule()
+-- @param dependsOn string[]|nil   当前包允许的全局表依赖（来自 Package_Meta.dependsOn）
+--                                  如果为 nil，回退到 PROJECT_GLOBALS（全项目白名单）
+function M.makeDetectGlobalUsageRule(dependsOn)
+    -- 构建当前包的 allowed globals 集合
+    -- 优先级：dependsOn > PROJECT_GLOBALS
+    local allowedGlobals = {}
+    if dependsOn then
+        -- dependsOn 优先级最高：只允许声明的依赖
+        for _, name in ipairs(dependsOn) do
+            allowedGlobals[name] = true
+        end
+    else
+        -- 无 dependsOn 时，回退到全项目白名单
+        for name in pairs(PROJECT_GLOBALS) do
+            allowedGlobals[name] = true
+        end
+    end
+
     return {
         id          = "detect_global_usage",
         description = "检测 global 引用（无 local 声明的变量）",
@@ -192,30 +209,18 @@ function M.makeDetectGlobalUsageRule()
                 ["UnrealNetwork"] = true,    -- 网络 RPC
 
                 -- require 路径前缀（字符串字面量中的大写前缀会被误报）
-                ["Script"] = true, 
+                ["Script"] = true,
             }
 
             -- ⑤ 收集所有 global 表引用（X.Y，其中 Y 以大写字母开头）
-            -- [^%w_]+：X 前面必须是空格/括号/逗号等非单词字符（但不能是下划线，下划线开头不算词边界）
-            -- ([A-Z][a-zA-Z0-9_]*)：捕获大写开头的 identifier
-            -- [.:]：X 和 Y 之间是 . 或 :
-            -- [A-Z]：Y 必须以大写字母开头（如 .EventType、.GetMilestone、:StartGame）
-            -- 效果：
-            --   Config_DemoOrchestrator.SnapshotFields[1] → 捕获 Config_DemoOrchestrator
-            --   Registry_CountDown.EventType.On_xxx → 捕获 Registry_CountDown
-            --   Util_EnumManager.Client_Service_Type.TipContent → 不捕获（Client_Service_Type 是枚举类型名）
-            --   System_CountDown.Start → 不捕获（Start 是 local）
-            -- 策略：
-            --   1. 捕获 compound ident（有下划线）的使用作为 potential global
-            --   2. 如果后面是表索引 [.XXX[ 或 #.XXX] 才真正报告
-            --   3. 如果后面是 .Member（链式），检查 Member 是否像枚举/类型名（大写开头的短名称如 Type、Enum、Status）
+            -- 使用 allowedGlobals 判断是否允许
             local globalTables = {}
             local seen = {}
 
             for _, line in ipairs(lines) do
                 if parser.isCodeLine(line) then
                     for ident, sep in line:gmatch("([A-Z][a-zA-Z0-9_]*)([.:][A-Z])") do
-                        if not seen[ident] and not ident:match("^_") and not localSet[ident] and not ENGINE_BUILTINS[ident] and not PROJECT_GLOBALS[ident] then
+                        if not seen[ident] and not ident:match("^_") and not localSet[ident] and not ENGINE_BUILTINS[ident] and not allowedGlobals[ident] then
                             local shouldCapture = false
 
                             if ident:match("_") then
@@ -256,7 +261,7 @@ function M.makeDetectGlobalUsageRule()
                 end
             end
 
-            -- ⑤ 收集所有 global 函数调用（小写开头 xxx(...)）
+            -- ⑥ 收集所有 global 函数调用（小写开头 xxx(...)）
             local globalFuncs = {}
             -- 逐行扫描，确保函数名前面是行首或非单词字符（词边界）
             for i, line in ipairs(lines) do
@@ -265,7 +270,7 @@ function M.makeDetectGlobalUsageRule()
                         local pos = line:find(fn, 1, true)
                         local before = line:sub(1, pos - 1)
                         if not localSet[fn] and not LUA_KEYWORDS[fn] and not LUA_BUILTINS[fn]
-                           and not ENGINE_BUILTINS[fn] and not PROJECT_GLOBALS[fn]
+                           and not ENGINE_BUILTINS[fn] and not allowedGlobals[fn]
                            and (before == "" or before:match("[^%w]$")) then
                             globalFuncs[fn] = true
                         end
@@ -273,7 +278,7 @@ function M.makeDetectGlobalUsageRule()
                 end
             end
 
-            -- ⑥ 按行号去重，同一行多个 global 合并为一条
+            -- ⑦ 按行号去重，同一行多个 global 合并为一条
             local byLine = {}
             for i, line in ipairs(lines) do
                 if parser.isCodeLine(line) then
@@ -301,7 +306,7 @@ function M.makeDetectGlobalUsageRule()
                 end
             end
 
-            -- ⑦ 转为 violation 列表
+            -- ⑧ 转为 violation 列表
             local violations = {}
             for lineNum, info in pairs(byLine) do
                 violations[#violations + 1] = {
@@ -320,12 +325,14 @@ function M.makeDetectGlobalUsageRule()
 end
 
 -- 默认三条规则打包（顺序决定 violation 输出顺序）
-function M.makeDefaultRules(privates)
+-- @param privates parser.loadPrivates 返回值
+-- @param dependsOn string[]|nil  当前包的依赖列表（来自 Package_Meta.dependsOn）
+function M.makeDefaultRules(privates, dependsOn)
     return {
         M.makeForbidTableIndexRule(privates),
         M.makeForbidFieldReadRule(privates),
         M.makeForbidTableLengthRule(privates),
-        M.makeDetectGlobalUsageRule(),
+        M.makeDetectGlobalUsageRule(dependsOn),
     }
 end
 
