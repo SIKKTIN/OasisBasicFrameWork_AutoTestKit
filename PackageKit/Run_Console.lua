@@ -3,7 +3,9 @@
 -- 运行: lua54 TestHelper\PackageKit\Run_Console.lua
 -- ============================================================
 
-package.path = package.path .. ";./TestHelper/PackageKit/?.lua"
+package.path = package.path
+    .. ";./TestHelper/PackageKit/?.lua"
+    .. ";./TestHelper/?.lua"
 
 local PackageKit = require("init")
 

@@ -11,9 +11,11 @@
 
 local M = {}
 
--- 加载 Project_Globals
+-- 加载 Project_Globals（路径由 ExternalConfig/setting.lua 提供）
+local setting = require("ExternalConfig.setting")
+
 local function loadProjectGlobals(projectRoot)
-    local path = projectRoot .. [[\Script\Setting\Project_Globals.lua]]
+    local path = projectRoot .. [[\]] .. setting.projectGlobalsPath
     local chunk, err = loadfile(path)
     if not chunk then
         return nil, "无法加载 Project_Globals: " .. path

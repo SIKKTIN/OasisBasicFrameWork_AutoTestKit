@@ -13,11 +13,15 @@
 package.path = package.path
     .. ";./TestHelper/PackageKit/?.lua"
     .. ";./TestHelper/PackageKit/tools/?.lua"
+    .. ";./TestHelper/?.lua"
 
 local M = {}
 
+-- 引入项目级配置
+local setting = require("ExternalConfig.setting")
+
 -- 项目根目录
-M.PROJECT_ROOT = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]]
+M.PROJECT_ROOT = setting.projectRoot
 
 function M.getProjectRoot()
     return M.PROJECT_ROOT
