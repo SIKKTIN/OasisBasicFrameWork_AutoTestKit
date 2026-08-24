@@ -35,11 +35,12 @@ CodeNorm.RegisterPackage("_DemoOrchestrator", {
     privatesPath = fixtureDir .. "/Package_Meta.lua",
 })
 
--- 1) 故意违反：期望 5 违规（直接索引 1 + 字段读取 3 + #长度 1）
+-- 1) 故意违反：期望 7 违规（直接索引 1 + 字段读取 3 + #长度 1 + global usage 2）
+-- global usage 是因为 Config_DemoOrchestrator 没有 local 声明
 CodeNorm.Expect("_DemoOrchestrator", {
     path  = fixtureDir .. "/System_DemoOrchestrator_Violating.lua",
-    count = 5,
-    label = "_DemoOrchestrator (Type B) Violating: 胶水包读 owner 私有字段应报 5 违规",
+    count = 7,
+    label = "_DemoOrchestrator (Type B) Violating: 胶水包读 owner 私有字段应报 7 违规",
 })
 
 -- 2) 合规版本：期望 0 违规（走公开 Get 接口）

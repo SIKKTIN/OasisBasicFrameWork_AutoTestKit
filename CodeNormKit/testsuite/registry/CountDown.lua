@@ -30,11 +30,10 @@ local CodeNorm = require("init")
 -- 声明被测包：自动推导 privates / system 路径
 CodeNorm.RegisterPackage("CountDown")
 
--- Declare expectation: System_CountDown.lua must produce 0 violations
--- under Package_Meta.lua constraints (all private access goes through
--- Config_CountDown's GetMilestone / GetMilestoneCount APIs).
+-- Declare expectation: System_CountDown.lua must produce 1 violation
+-- Registry_CountDown is used but not declared as local (global usage).
 CodeNorm.Expect("CountDown", {
     path  = "Script/Package/CountDown/System/System_CountDown.lua",
-    count = 0,
+    count = 1,
     label = "CountDown / System_CountDown.lua",
 })

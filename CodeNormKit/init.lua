@@ -34,6 +34,7 @@ M.RULE_DESCRIPTIONS = {
     forbid_table_index  = "禁止直接索引私有表",
     forbid_field_read   = "禁止直接读取私有字段",
     forbid_table_length = "禁止用 # 取私有表长度",
+    detect_global_usage = "检测 global 引用（无 local 声明）",
 }
 
 -- ============================================================
@@ -264,6 +265,14 @@ function M.PrintReport(results, opts)
                 print(string.format("  L%4d [#%s]  %s",
                     v.line, v.rule, desc))
                 print(string.format("         %s", v.text))
+                if v.rule == "detect_global_usage" then
+                    if v.tables and #v.tables > 0 then
+                        print(string.format("         global tables: %s", table.concat(v.tables, ", ")))
+                    end
+                    if v.funcs and #v.funcs > 0 then
+                        print(string.format("         global funcs:  %s", table.concat(v.funcs, ", ")))
+                    end
+                end
             end
             print("  " .. sep)
         end
