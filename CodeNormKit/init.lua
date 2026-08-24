@@ -448,4 +448,40 @@ function M.LoadTests(configPath, projectRoot)
     return #entries
 end
 
+-- ============================================================
+-- 辅助函数：供控制台使用
+-- ============================================================
+
+--- 获取所有已注册的包名列表
+function M.GetRegisteredPackages()
+    local pkgs = {}
+    for name, _ in pairs(M.packages) do
+        pkgs[#pkgs + 1] = name
+    end
+    table.sort(pkgs)
+    return pkgs
+end
+
+--- 获取某个包下的所有测试用例
+function M.GetExpectationsForPackage(packageName)
+    local result = {}
+    for _, exp in pairs(M.expectations) do
+        if exp.packageName == packageName then
+            result[#result + 1] = {
+                id    = exp.id,
+                label = exp.label,
+                path  = exp.targetPath,
+                count = exp.expectCount,
+            }
+        end
+    end
+    return result
+end
+
+--- 运行单个包的所有测试用例
+function M.RunPackage(packageName)
+    local results = M.Run(nil, { onlyPackage = packageName })
+    return results
+end
+
 return M

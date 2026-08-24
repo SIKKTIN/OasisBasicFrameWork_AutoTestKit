@@ -18,7 +18,7 @@ return {
             {
                 path = "Script/Package/AutoTestKit/TestRunner/TestManager.lua",
                 count = 5,
-                label = "走 Config getter",
+                label = "TestManager 测试用例",
             },
         },
     },
@@ -28,7 +28,7 @@ return {
             {
                 path = "Script/Package/CountDown/System/System_CountDown.lua",
                 count = 0,
-                label = "dependsOn 白名单",
+                label = "System_CountDown 测试用例",
             },
         },
     },
