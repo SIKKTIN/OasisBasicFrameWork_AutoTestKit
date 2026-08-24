@@ -2,19 +2,32 @@
 -- TestKit
 -- 包内单元测试统一管理套件
 --
--- 配置: 填入项目根目录
---   测试目录: TestHelper/UnitTests/
---   测试文件: TestHelper/UnitTests/Test_*.lua
---   opts.testDir 可显式覆盖
+-- 配置来源: ExternalConfig/setting.lua
+--   projectRoot     - 被测业务项目根（Withdraw）
+--   testHelperRoot  - TestHelper 工具根
+--   testDir         - 单元测试根目录（相对 testHelperRoot）
+--
+-- 约定:
+--   测试目录: <testHelperRoot>/<testDir>/
+--   测试文件: <testDir>/Test_*.lua
+--   opts.testDir 可在 RegisterPackage 时显式覆盖
 -- ============================================================
+
+-- 把 TestHelper 根加入 package.path, 使得
+--   require("ExternalConfig.setting") 能工作
+package.path = package.path .. ";./TestHelper/?.lua"
 
 local M = {}
 
--- 项目根目录（请根据实际项目修改）
-M.PROJECT_ROOT = [[E:\Project\AgentHelper\WithDrawCache]]
+-- 引入项目级配置
+local setting = require("ExternalConfig.setting")
 
--- 默认测试目录（相对于 PROJECT_ROOT）
-M.DEFAULT_TEST_DIR = [[TestHelper\UnitTests]]
+-- 项目级路径
+M.PROJECT_ROOT    = setting.projectRoot     -- 被测业务项目根
+M.TEST_HELPER_ROOT = setting.testHelperRoot -- TestHelper 工具根
+
+-- 默认单元测试根目录(相对 TEST_HELPER_ROOT)
+M.DEFAULT_TEST_DIR = setting.testDir
 
 -- 包注册表: { [name] = { name, testDir, testFiles } }
 M.packages = {}
@@ -27,10 +40,24 @@ function M.getProjectRoot()
     return M.PROJECT_ROOT
 end
 
+function M.getTestHelperRoot()
+    return M.TEST_HELPER_ROOT
+end
+
+function M.getDefaultTestDir()
+    return M.DEFAULT_TEST_DIR
+end
+
 -- 扫描目录下所有 Test_*.lua 文件
-function M.scanTestFiles(testDir, projectRoot)
+-- testDir 可以是绝对路径,也可以是相对 TEST_HELPER_ROOT 的相对路径
+function M.scanTestFiles(testDir)
     local files = {}
-    local fullPath = projectRoot .. "\\" .. testDir:gsub("/", "\\")
+    local fullPath
+    if testDir:match("^[A-Za-z]:") or testDir:match("^[/\\]") then
+        fullPath = testDir:gsub("/", "\\")
+    else
+        fullPath = M.TEST_HELPER_ROOT .. "\\" .. testDir:gsub("/", "\\")
+    end
 
     local handle = io.popen('dir /b "' .. fullPath .. '\\Test_*.lua" 2>nul')
     if handle then
@@ -48,8 +75,9 @@ function M.scanTestFiles(testDir, projectRoot)
 end
 
 -- 执行单个测试文件，返回 { output, exitCode }
-function M.runTestFile(testFilePath, projectRoot)
-    local fullPath = projectRoot .. "\\" .. testFilePath:gsub("/", "\\")
+-- testFilePath 应当是 TEST_HELPER_ROOT 下的相对路径(如 "UnitTests/CountDown/Test_Config.lua")
+function M.runTestFile(testFilePath)
+    local fullPath = M.TEST_HELPER_ROOT .. "\\" .. testFilePath:gsub("/", "\\")
 
     -- 用 call 延迟 %errorlevel% 的读取时机，确保 lua54 执行完再取
     local cmd = 'cmd /c "lua54 "' .. fullPath .. '" 2>&1 & call echo EXITCODE: %errorlevel%"'
@@ -102,8 +130,7 @@ function M.GetTestFiles(packageName)
     if not pkg then return {} end
 
     if #pkg.testFiles == 0 then
-        local projectRoot = M.getProjectRoot()
-        pkg.testFiles = M.scanTestFiles(pkg.testDir, projectRoot)
+        pkg.testFiles = M.scanTestFiles(pkg.testDir)
     end
 
     return pkg.testFiles
@@ -128,14 +155,13 @@ function M.RunPackage(packageName)
         }
     end
 
-    local projectRoot = M.getProjectRoot()
     local testFiles = M.GetTestFiles(packageName)
     local allPass = true
     local results = {}
 
     for _, fileName in ipairs(testFiles) do
         local testFilePath = pkg.testDir .. "/" .. fileName
-        local result = M.runTestFile(testFilePath, projectRoot)
+        local result = M.runTestFile(testFilePath)
         result.fileName = fileName
         result.filePath = testFilePath
         if not result.pass then allPass = false end
@@ -161,9 +187,8 @@ function M.RunSingleFile(packageName, fileName)
         }
     end
 
-    local projectRoot = M.getProjectRoot()
     local testFilePath = pkg.testDir .. "/" .. fileName
-    local result = M.runTestFile(testFilePath, projectRoot)
+    local result = M.runTestFile(testFilePath)
     result.fileName = fileName
     result.filePath = testFilePath
 

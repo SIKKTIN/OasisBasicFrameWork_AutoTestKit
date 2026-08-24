@@ -16,4 +16,7 @@ return {
 
     -- 项目全局白名单文件（相对于 projectRoot）
     projectGlobalsPath = [[Script\Setting\Project_Globals.lua]],
+
+    -- TestKit: 单元测试根目录（相对于 testHelperRoot）
+    testDir = [[UnitTests]],
 }

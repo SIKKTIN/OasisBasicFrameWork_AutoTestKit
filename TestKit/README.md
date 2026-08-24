@@ -24,35 +24,52 @@ cd TestHelper\TestKit
 lua54 Run_Console.lua
 ```
 
-## 新增测试包的流程
+## 配置
 
-1. **创建测试文件**
+路径相关配置统一从 `ExternalConfig/setting.lua` 读取：
 
-   路径约定：`TestHelper/UnitTests/Test_*.lua`
+- `projectRoot` — 被测业务项目根（Withdraw）
+- `testHelperRoot` — TestHelper 工具根
+- `testDir` — 单元测试根目录，相对 `testHelperRoot`，默认 `UnitTests`
 
-   ```
-   TestHelper/
-   └── UnitTests/
-       ├── Test_Config.lua
-       └── Test_Service.lua
-   ```
-
-2. **注册包**
-
-   在 `Run_Console.lua` 中添加一行：
-
-   ```lua
-   TestKit.RegisterPackage("CountDown")
-   ```
-
-   完成以上两步后，启动控制台即可自动发现并运行测试。
+修改这些字段即可；TestKit 无需硬编码路径。
 
 ## 目录约定
 
 | 约定 | 默认路径 | 说明 |
 |------|----------|------|
-| 测试根目录 | `TestHelper/UnitTests/` | 可通过 `opts.testDir` 覆盖 |
+| 测试根目录 | `<testHelperRoot>/<testDir>/` | 默认 `TestHelper/UnitTests/`，可通过 `setting.testDir` 修改 |
 | 测试文件 | `Test_*.lua` | 必须以 `Test_` 开头 |
+
+## 新增测试包的流程
+
+1. **创建测试文件**
+
+   路径约定：`<testDir>/<PackageName>/Test_*.lua`（如 `UnitTests/CountDown/Test_Config.lua`）
+
+   ```
+   TestHelper/
+   └── UnitTests/
+       └── CountDown/
+           ├── Test_Config.lua
+           └── Test_Service.lua
+   ```
+
+2. **注册包**
+
+   在 `Run_Console.lua` 中添加一行（路径相对 `testHelperRoot`）：
+
+   ```lua
+   TestKit.RegisterPackage("CountDown", { testDir = "UnitTests/CountDown" })
+   ```
+
+   或者更省事的写法（用 `setting.testDir` 默认值作根，包名作子目录）：
+
+   ```lua
+   TestKit.RegisterPackage("CountDown")  -- 自动 = <setting.testDir>/CountDown
+   ```
+
+   启动控制台即可自动发现并运行测试。
 
 ## API 参考
 
@@ -95,7 +112,7 @@ TestKit.RunAll()                               -- 运行所有已注册包
     results = {
         {
             fileName = "Test_Config.lua",
-            filePath = "TestHelper/UnitTests/Test_Config.lua",
+            filePath = "UnitTests/CountDown/Test_Config.lua",
             output = "...",    -- 原始输出
             exitCode = 0,
             pass = true
