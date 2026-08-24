@@ -106,9 +106,17 @@ end
 -- 包管理
 -- ============================================================
 
+-- 注册一个测试包
+-- @param name    string  包名
+-- @param opts    table?  可选: { testDir = "..." }
+--   opts.testDir 可省略;省略时使用 setting.testDir + "/" + name
+--   (例如 name="CountDown" -> testDir = "<setting.testDir>/CountDown")
 function M.RegisterPackage(name, opts)
     opts = opts or {}
-    local testDir = opts.testDir or M.DEFAULT_TEST_DIR
+    local testDir = opts.testDir
+    if not testDir or testDir == "" then
+        testDir = M.DEFAULT_TEST_DIR .. "/" .. name
+    end
     M.packages[name] = {
         name = name,
         testDir = testDir,

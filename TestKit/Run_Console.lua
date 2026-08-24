@@ -17,10 +17,9 @@ package.path = package.path
 local TestKit = require("init")
 
 -- 注册所有包（按需添加）
--- 测试目录相对 TEST_HELPER_ROOT (从 setting.testHelperRoot 读取)
--- 不传 testDir 时,默认用 setting.testDir/<packageName>
-TestKit.RegisterPackage("CountDown", { testDir = "UnitTests/CountDown" })
-TestKit.RegisterPackage("Util",      { testDir = "UnitTests/Util" })
+-- 不传 testDir 时,默认按 setting.testDir/<packageName> 拼接
+TestKit.RegisterPackage("CountDown")
+TestKit.RegisterPackage("Util")
 -- TestKit.RegisterPackage("BattlePass")
 -- TestKit.RegisterPackage("YourPackage")
 
