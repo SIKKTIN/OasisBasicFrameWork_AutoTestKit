@@ -3,8 +3,8 @@
 -- 包内单元测试统一管理套件
 --
 -- 配置: 填入项目根目录
---   测试目录: TestHelper/Test/
---   测试文件: TestHelper/Test/Test_*.lua
+--   测试目录: TestHelper/UnitTests/
+--   测试文件: TestHelper/UnitTests/Test_*.lua
 --   opts.testDir 可显式覆盖
 -- ============================================================
 
@@ -14,7 +14,7 @@ local M = {}
 M.PROJECT_ROOT = [[E:\Project\AgentHelper\WithDrawCache]]
 
 -- 默认测试目录（相对于 PROJECT_ROOT）
-M.DEFAULT_TEST_DIR = [[TestHelper\Test]]
+M.DEFAULT_TEST_DIR = [[TestHelper\UnitTests]]
 
 -- 包注册表: { [name] = { name, testDir, testFiles } }
 M.packages = {}

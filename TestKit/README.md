@@ -10,7 +10,7 @@ TestHelper/
 │   ├── init.lua          -- 核心库（包注册、扫描、运行）
 │   ├── Run_Console.lua   -- 交互式控制台入口
 │   └── README.md         -- 本文档
-└── Test/                 -- 测试文件目录
+└── UnitTests/            -- 测试文件目录
     └── Test_*.lua
 ```
 
@@ -28,11 +28,11 @@ lua54 Run_Console.lua
 
 1. **创建测试文件**
 
-   路径约定：`TestHelper/Test/Test_*.lua`
+   路径约定：`TestHelper/UnitTests/Test_*.lua`
 
    ```
    TestHelper/
-   └── Test/
+   └── UnitTests/
        ├── Test_Config.lua
        └── Test_Service.lua
    ```
@@ -51,7 +51,7 @@ lua54 Run_Console.lua
 
 | 约定 | 默认路径 | 说明 |
 |------|----------|------|
-| 测试根目录 | `TestHelper/Test/` | 可通过 `opts.testDir` 覆盖 |
+| 测试根目录 | `TestHelper/UnitTests/` | 可通过 `opts.testDir` 覆盖 |
 | 测试文件 | `Test_*.lua` | 必须以 `Test_` 开头 |
 
 ## API 参考
@@ -95,7 +95,7 @@ TestKit.RunAll()                               -- 运行所有已注册包
     results = {
         {
             fileName = "Test_Config.lua",
-            filePath = "TestHelper/Test/Test_Config.lua",
+            filePath = "TestHelper/UnitTests/Test_Config.lua",
             output = "...",    -- 原始输出
             exitCode = 0,
             pass = true

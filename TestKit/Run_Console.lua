@@ -12,8 +12,8 @@ package.path = package.path .. ";./TestHelper/TestKit/?.lua"
 local TestKit = require("init")
 
 -- 注册所有包（按需添加）
-TestKit.RegisterPackage("CountDown", { testDir = "TestHelper/Test/CountDown" })
-TestKit.RegisterPackage("Util", { testDir = "TestHelper/Test/Util" })
+TestKit.RegisterPackage("CountDown", { testDir = "TestHelper/UnitTests/CountDown" })
+TestKit.RegisterPackage("Util", { testDir = "TestHelper/UnitTests/Util" })
 -- TestKit.RegisterPackage("BattlePass")
 -- TestKit.RegisterPackage("YourPackage")
 
