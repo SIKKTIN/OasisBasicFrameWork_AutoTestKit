@@ -49,6 +49,91 @@ XXX = XXX or {}
 Withdraw/Script/Setting/Project_Globals.lua
 ```
 
+### 2. 生成 Package_Registry.lua
+
+扫描 `Withdraw/Script/Package` 目录下所有 Registry 文件，生成 `Package_Registry.lua`。
+
+**匹配模式**：
+```
+Script/Package/{PackageName}/Registry_{PackageName}.lua
+```
+
+例如：
+- `Script/Package/CountDown/Registry_CountDown.lua`
+- `Script/Package/Task/Registry_Task.lua`
+
+**输出文件**：
+```
+Withdraw/Script/Setting/Package_Registry.lua
+```
+
+**输出结构**：
+```lua
+local Package_Registry = {
+    "Script.Package.CountDown.Registry_CountDown",
+    "Script.Package.AutoTestKit.Registry_AutoTestKit",
+    "Script.Package.GamePlayRecord.Registry_GamePlayRecord",
+    "Script.Package.Task.Registry_Task",
+}
+
+function Package_Registry.BeginPlay()
+    for _, modulePath in ipairs(Package_Registry) do
+        local ok, registry = pcall(require, modulePath)
+        if ok and registry and registry.BeginPlay then
+            registry.BeginPlay()
+        end
+    end
+end
+
+return Package_Registry
+```
+
+**使用方式**：
+```lua
+local Package_Registry = require("Script.Setting.Package_Registry")
+Package_Registry.BeginPlay()
+```
+
+### 3. 生成 Package_Meta_Index.lua
+
+扫描 `Withdraw/Script/Package` 目录下所有 `Package_Meta.lua`，生成 `Package_Meta_Index.lua`。
+
+**匹配模式**：
+```
+Script/Package/{PackageName}/Package_Meta.lua
+```
+
+**输出文件**：
+```
+Withdraw/Script/Setting/Package_Meta_Index.lua
+```
+
+**作用**：
+Core 层（PlayerDataCore / EventCore / 等）按需加载所有 Meta；
+每次 `Load()` 都重新 `require`，不缓存，调用方拿到 Meta 列表自行处理。
+
+**使用方式**：
+```lua
+local Package_Meta_Index = require("Script.Setting.Package_Meta_Index")
+
+-- 加载全部 Meta（每次都重新 require，不缓存）
+for _, meta in ipairs(Package_Meta_Index.Load()) do
+    if meta.playerData then
+        -- 注册到 PlayerDataCore / EventCore / 等
+    end
+end
+
+-- 按包名过滤
+for _, meta in ipairs(Package_Meta_Index.Load()) do
+    if meta.packageName == "Task" then
+        -- 处理 Task Meta
+    end
+end
+```
+
+> **变更说明**：旧版 `BeginPlay()` / `Get()` / `ForEach()` 已被删除，统一改为单 `Load()` API。
+> `Load()` 每次都重新 `require`，但 Lua 的 `package.loaded` 自带模块缓存，第二次同路径几乎零开销。
+
 ## 扩展新工具
 
 在 `GenKit/init.lua` 中添加新的生成器：

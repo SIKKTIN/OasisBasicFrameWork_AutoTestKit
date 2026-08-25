@@ -17,6 +17,12 @@ return {
     -- 项目全局白名单文件（相对于 projectRoot）
     projectGlobalsPath = [[Script\Setting\Project_Globals.lua]],
 
+    -- Package_Registry 生成文件路径（相对于 projectRoot）
+    packageRegistryPath = [[Script\Setting\Package_Registry.lua]],
+
+    -- Package_Meta_Index 生成文件路径（相对于 projectRoot）
+    packageMetaIndexPath = [[Script\Setting\Package_Meta_Index.lua]],
+
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],
 }
