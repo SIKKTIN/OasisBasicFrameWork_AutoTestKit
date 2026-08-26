@@ -903,21 +903,40 @@ end
 -- ============================================================
 
 --- 将配置数据序列化为排序后的 key=value 字符串列表（用于比对）
----@param data table 从 JSON 解析出的数据 { tableName: { row } }
+--- 支持两种形态：
+---   1. JSON 解析结果：{ [tableName] = { row1, row2, ... } }
+---   2. Lua Config 直接返回：{ row1, row2, ... }
+---@param data table
 ---@return string 排序后的键值字符串
 function M.serializeForCompare(data)
     local parts = {}
-    local tableName = next(data)
-    if tableName then
-        local rows = data[tableName]
-        if type(rows) == "table" then
-            for _, row in ipairs(rows) do
-                for k, v in pairs(row) do
-                    table.insert(parts, k .. "=" .. tostring(v))
-                end
+    if type(data) ~= "table" then
+        return ""
+    end
+
+    local rows
+    -- 形态 1：{ [tableName] = { ... } } — 第一个键对应的是行数组
+    local firstKey = next(data)
+    if firstKey == nil then
+        return ""
+    end
+    local firstVal = data[firstKey]
+    if type(firstKey) == "string" and type(firstVal) == "table" and #firstVal > 0 then
+        -- 形如 { "Milestones" = { {...}, {...} } }
+        rows = firstVal
+    else
+        -- 形态 2：本身是行数组 { {...}, {...} }
+        rows = data
+    end
+
+    for _, row in ipairs(rows) do
+        if type(row) == "table" then
+            for k, v in pairs(row) do
+                table.insert(parts, tostring(k) .. "=" .. tostring(v))
             end
         end
     end
+
     table.sort(parts)
     return table.concat(parts, "|")
 end
@@ -930,7 +949,7 @@ local function readAndSerializeLua(targetPath)
     if not f then return nil end
     local content = f:read("*a")
     f:close()
-    local chunk, err = load("return " .. content, "lua")
+    local chunk, err = load(content, targetPath)
     if not chunk then return nil end
     local ok, data = pcall(chunk)
     if not ok then return nil end

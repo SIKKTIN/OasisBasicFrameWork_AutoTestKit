@@ -410,35 +410,6 @@ local function modeImportAll()
     waitEnter()
 end
 
--- 导入模式主菜单
-local function modeImport()
-    while true do
-        printImportSubMenu()
-        local choice = io.read()
-        choice = (choice or ""):gsub("^%s*(.-)%s*$", "%1")
-
-        if choice == "0" then
-            return
-        elseif choice == "1" then
-            modeImportAll()
-            return
-        elseif choice == "2" then
-            modeImportSelect()
-            return
-        elseif choice == "3" then
-            modeConflictCheck()
-            return
-        elseif choice == "4" then
-            modeProcessConflicts()
-            return
-        else
-            header("无效选择")
-            print("  请输入有效的选项")
-            waitEnter()
-        end
-    end
-end
-
 -- 冲突检测
 local function modeConflictCheck()
     header("冲突检测")
@@ -488,12 +459,43 @@ local function modeProcessConflicts()
         return
     end
 
-    local ok, _ = pcall(JsonExportKit.processConflicts)
+    local ok = pcall(JsonExportKit.processConflicts)
     if not ok then
         print("  [ERROR] 处理失败")
     end
     waitEnter()
 end
+
+-- 导入模式主菜单
+local function modeImport()
+    while true do
+        printImportSubMenu()
+        local choice = io.read()
+        choice = (choice or ""):gsub("^%s*(.-)%s*$", "%1")
+
+        if choice == "0" then
+            return
+        elseif choice == "1" then
+            modeImportAll()
+            return
+        elseif choice == "2" then
+            modeImportSelect()
+            return
+        elseif choice == "3" then
+            modeConflictCheck()
+            return
+        elseif choice == "4" then
+            modeProcessConflicts()
+            return
+        else
+            header("无效选择")
+            print("  请输入有效的选项")
+            waitEnter()
+        end
+    end
+end
+
+-- 删除旧位置（占位行，保证后续不再出现重复定义）
 
 -- 导出模式主菜单
 local function modeExport()
