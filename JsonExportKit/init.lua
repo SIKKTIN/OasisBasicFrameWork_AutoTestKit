@@ -8,6 +8,9 @@
 
 local M = {}
 
+-- 冲突缓存（每次 conflictCheck 重算）
+local _conflictCache = {}
+
 -- TestHelper 根目录（固定路径）
 local TEST_HELPER_ROOT = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]]
 
@@ -896,6 +899,45 @@ local function parseJson(jsonStr)
 end
 
 -- ============================================================
+-- 冲突检测辅助
+-- ============================================================
+
+--- 将配置数据序列化为排序后的 key=value 字符串列表（用于比对）
+---@param data table 从 JSON 解析出的数据 { tableName: { row } }
+---@return string 排序后的键值字符串
+function M.serializeForCompare(data)
+    local parts = {}
+    local tableName = next(data)
+    if tableName then
+        local rows = data[tableName]
+        if type(rows) == "table" then
+            for _, row in ipairs(rows) do
+                for k, v in pairs(row) do
+                    table.insert(parts, k .. "=" .. tostring(v))
+                end
+            end
+        end
+    end
+    table.sort(parts)
+    return table.concat(parts, "|")
+end
+
+--- 读取并序列化现有 Lua Config（用于比对）
+---@param targetPath string 完整路径
+---@return string|nil 序列化后的键值字符串
+local function readAndSerializeLua(targetPath)
+    local f = io.open(targetPath, "r")
+    if not f then return nil end
+    local content = f:read("*a")
+    f:close()
+    local chunk, err = load("return " .. content, "lua")
+    if not chunk then return nil end
+    local ok, data = pcall(chunk)
+    if not ok then return nil end
+    return M.serializeForCompare(data)
+end
+
+-- ============================================================
 -- Import: 从 JSON 生成 Lua 配置
 -- ============================================================
 
@@ -1196,6 +1238,177 @@ function M.previewImport(packageNames)
 end
 
 -- ============================================================
+-- 冲突检测 / 处理
+-- ============================================================
+
+--- 冲突检测：扫描所有 Package 的 JSON 与目标 Lua，判定三态
+---@param packageNames string[]|nil nil 表示全部
+---@return table[] 冲突缓存数组，每个元素含 packageName/owner/luaPath/jsonPath/status
+function M.conflictCheck(packageNames)
+    local exportRoot = M.getExportRoot()
+    local metas = M.scanAllMeta()
+    local cache = {}
+
+    for _, item in ipairs(metas) do
+        if not packageNames or packageNames[item.packageName] then
+            local meta = M.loadMeta(item.filePath)
+            if meta and meta.privates then
+                for _, privateDef in ipairs(meta.privates) do
+                    local owner = privateDef.owner
+                    local dataPath = (privateDef.dataPath or ""):gsub("[/\\]+$", ""):gsub("^[/\\]+", "")
+                    if owner then
+                        local jsonFileName = getConfigJsonName(owner)
+                        local luaFileName = getConfigLuaName(owner)
+                        local jsonDir = M.resolveTargetDir(item.packageName, dataPath, exportRoot)
+                        local luaDir  = M.resolveTargetDir(item.packageName, dataPath, M.PROJECT_ROOT)
+                        local jsonPath = jsonDir .. "\\" .. jsonFileName
+                        local luaPath  = luaDir  .. "\\" .. luaFileName
+
+                        local jsonExists = io.open(jsonPath, "r") ~= nil
+                        local luaExists = io.open(luaPath, "r") ~= nil
+
+                        local entry = {
+                            packageName = item.packageName,
+                            owner       = owner,
+                            jsonPath    = jsonPath,
+                            luaPath     = luaPath,
+                            status      = nil,
+                        }
+
+                        if not jsonExists then
+                            -- JSON 不存在视为无需处理，跳过不入缓存
+                        elseif not luaExists then
+                            entry.status = "写入"
+                            table.insert(cache, entry)
+                        else
+                            local jsonContent = readJsonFile(jsonPath)
+                            local jsonData = parseJson(jsonContent)
+                            local jsonSer = M.serializeForCompare(jsonData)
+                            local luaSer  = readAndSerializeLua(luaPath)
+                            if jsonSer == luaSer then
+                                entry.status = "无更新"
+                            else
+                                entry.status = "修改"
+                            end
+                            table.insert(cache, entry)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    _conflictCache = cache
+    return cache
+end
+
+--- 处理冲突：遍历缓存中"写入"和"修改"项，逐项询问覆盖/忽视
+--- 对用户选择的覆盖项执行实际的 importPackage
+---@return table results { applied = N, skipped = N }
+function M.processConflicts()
+    local toProcess = {}
+    for _, entry in ipairs(_conflictCache) do
+        if entry.status == "写入" or entry.status == "修改" then
+            table.insert(toProcess, entry)
+        end
+    end
+
+    if #toProcess == 0 then
+        print("  [INFO] 无待处理冲突")
+        return { applied = 0, skipped = 0 }
+    end
+
+    print("")
+    print("  共 " .. #toProcess .. " 个冲突待处理")
+    print("  规则：[O] 覆盖  [I] 忽视  [A] 全部覆盖  [S] 全部忽视")
+    print("")
+
+    local applied = 0
+    local skipped = 0
+    for i, entry in ipairs(toProcess) do
+        print(string.format("  [%d/%d] %s (%s)", i, #toProcess, entry.packageName, entry.owner))
+        print(string.format("    JSON: %s", entry.jsonPath))
+        print(string.format("    Lua:  %s", entry.luaPath))
+        print(string.format("    状态: [%s]", entry.status))
+        print("")
+        io.write("    选择 [O/I/A/S]: ")
+        io.flush()
+        local choice = (io.read() or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
+
+        if choice == "o" then
+            M.doImportSingle(entry)
+            applied = applied + 1
+        elseif choice == "i" then
+            skipped = skipped + 1
+        elseif choice == "a" then
+            for j = i, #toProcess do
+                M.doImportSingle(toProcess[j])
+                applied = applied + 1
+            end
+            break
+        elseif choice == "s" then
+            skipped = skipped + (#toProcess - i + 1)
+            break
+        else
+            skipped = skipped + 1
+        end
+        print("")
+    end
+
+    print("")
+    print("  已覆盖: " .. applied .. " / 已忽视: " .. skipped)
+    return { applied = applied, skipped = skipped }
+end
+
+--- 执行单个 entry 的导入（内部用）
+---@param entry table conflictCache 条目
+function M.doImportSingle(entry)
+    local jsonContent = readJsonFile(entry.jsonPath)
+    if not jsonContent then return end
+    local jsonData = parseJson(jsonContent)
+    if not jsonData then return end
+    local newData = generateLuaConfig(jsonData, entry.owner)
+    local existingContent = nil
+    local f = io.open(entry.luaPath, "r")
+    if f then
+        existingContent = f:read("*a")
+        f:close()
+    end
+    local finalContent
+    if existingContent and existingContent:find("function " .. entry.owner:gsub("Define_", "") .. "%.") then
+        local returnPos = existingContent:find("return%s*{")
+        if returnPos then
+            local braceStart = existingContent:find("{", returnPos, true)
+            if braceStart then
+                local depth = 1
+                local idx = braceStart + 1
+                while idx <= #existingContent and depth > 0 do
+                    local c = existingContent:sub(idx, idx)
+                    if c == "{" then depth = depth + 1
+                    elseif c == "}" then depth = depth - 1 end
+                    idx = idx + 1
+                end
+                finalContent = existingContent:sub(1, returnPos - 1) .. newData .. existingContent:sub(idx)
+            else
+                finalContent = newData
+            end
+        else
+            finalContent = newData
+        end
+    else
+        finalContent = newData
+    end
+    local fOut = io.open(entry.luaPath, "w")
+    if fOut then
+        fOut:write(finalContent)
+        fOut:close()
+        print("    [OK] 已覆盖")
+    else
+        print("    [ERROR] 无法写入")
+    end
+end
+
+-- ============================================================
 -- 工具函数（供 GenKit 复用）
 -- ============================================================
 
@@ -1217,6 +1430,10 @@ M.tools = {
 
 function M.getTools()
     return M.tools
+end
+
+function M.getConflictCache()
+    return _conflictCache
 end
 
 return M

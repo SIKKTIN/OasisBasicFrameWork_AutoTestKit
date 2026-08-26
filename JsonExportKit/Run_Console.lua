@@ -76,6 +76,8 @@ local function printImportSubMenu()
     print("")
     print("  [1] 导入所有 Package")
     print("  [2] 选择导入 Package")
+    print("  [3] 冲突检测")
+    print("  [4] 处理冲突")
     print("")
     print("  [0] 返回上级")
     print("")
@@ -423,12 +425,74 @@ local function modeImport()
         elseif choice == "2" then
             modeImportSelect()
             return
+        elseif choice == "3" then
+            modeConflictCheck()
+            return
+        elseif choice == "4" then
+            modeProcessConflicts()
+            return
         else
             header("无效选择")
             print("  请输入有效的选项")
             waitEnter()
         end
     end
+end
+
+-- 冲突检测
+local function modeConflictCheck()
+    header("冲突检测")
+    print("  模式: 检测 JSON 与目标 Lua 的差异")
+    print("  源目录: " .. JsonExportKit.getExportRoot())
+    print("")
+    pcall(JsonExportKit.previewAll)
+
+    local cache = JsonExportKit.conflictCheck()
+
+    print("")
+    print("═══════════════════════════════════════════════════════════")
+    print("  检测结果")
+    print("═══════════════════════════════════════════════════════════")
+    print("")
+    print(string.format("  %-20s  %-15s  %-30s  %-8s", "Package", "Owner", "Lua 路径", "状态"))
+    print("  " .. string.rep("─", 80))
+
+    local wCount, mCount, nCount = 0, 0, 0
+    for _, entry in ipairs(cache) do
+        local shortLua = entry.luaPath:gsub("^.*\\", "")
+        local statusColor = entry.status == "写入" and "[写入]" or entry.status == "修改" and "[修改]" or "[无更新]"
+        print(string.format("  %-20s  %-15s  %-30s  %-8s",
+            entry.packageName, entry.owner, shortLua, statusColor))
+        if entry.status == "写入" then wCount = wCount + 1
+        elseif entry.status == "修改" then mCount = mCount + 1
+        else nCount = nCount + 1 end
+    end
+    print("")
+    print("  写入: " .. wCount .. "  |  修改: " .. mCount .. "  |  无更新: " .. nCount)
+    print("  共 " .. #cache .. " 个文件待处理")
+    print("")
+    print("═══════════════════════════════════════════════════════════")
+    waitEnter()
+end
+
+-- 处理冲突
+local function modeProcessConflicts()
+    header("处理冲突")
+    print("  模式: 逐项确认覆盖或忽视")
+    print("")
+
+    local cache = JsonExportKit.getConflictCache()
+    if not cache or #cache == 0 then
+        print("  [INFO] 缓存为空，请先运行冲突检测")
+        waitEnter()
+        return
+    end
+
+    local ok, _ = pcall(JsonExportKit.processConflicts)
+    if not ok then
+        print("  [ERROR] 处理失败")
+    end
+    waitEnter()
 end
 
 -- 导出模式主菜单
