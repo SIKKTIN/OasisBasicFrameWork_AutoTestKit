@@ -1,8 +1,26 @@
-# ============================================================
+﻿# ============================================================
 # JsonExportKit 启动器
 # ============================================================
 
-$PROJECT_ROOT = 'E:\Project\AgentHelper\WithDrawCache'
+$SETTING_FILE = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'ExternalConfig\setting.lua'
+
+# 从 setting.lua 中读取 [[...]] 字段（仅支持顶层字符串字面量）
+function Get-SettingField {
+    param([string]$Name)
+    if (-not (Test-Path $SETTING_FILE)) { return $null }
+    $pattern = '(?m)^\s*' + [regex]::Escape($Name) + '\s*=\s*\[\[(.*?)\]\]'
+    $raw = Get-Content $SETTING_FILE -Raw -Encoding UTF8
+    $m = [regex]::Match($raw, $pattern)
+    if ($m.Success) { return $m.Groups[1].Value }
+    return $null
+}
+
+# 默认从 setting.lua 读取 testHelperRoot，自动推算其父目录作为项目根
+$_thRoot = Get-SettingField 'testHelperRoot'
+if ($_thRoot) {
+    $PROJECT_ROOT = (Split-Path -Parent $_thRoot.TrimEnd('\','/'))
+}
+$PROJECT_ROOT_PARENT = (Split-Path -Parent $PROJECT_ROOT.TrimEnd('\','/'))
 
 # UTF-8 支持
 chcp 65001 > $null
@@ -43,7 +61,17 @@ if (-not (Test-Path $luaScript)) {
     exit 1
 }
 
-& lua54 $luaScript
+$luaExec = Get-SettingField 'luaPath'
+if (-not $luaExec) {
+    Write-Host "[ERROR] Cannot find luaPath in setting.lua" -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path $luaExec)) {
+    Write-Host "[ERROR] lua executable not found: $luaExec" -ForegroundColor Red
+    exit 1
+}
+
+& $luaExec $luaScript
 $exitCode = $LASTEXITCODE
 
 if ($exitCode -ne 0) {

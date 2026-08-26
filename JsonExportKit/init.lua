@@ -427,6 +427,37 @@ function M.ensureDir(dir)
     end
 end
 
+--- 把 Package_Meta 里的 dataPath 解析为目标绝对目录。
+--- 规则：
+---   - 若 dataPath 以 "Script/"、"Data/" 开头，或以盘符/Absolute 路径开头
+---     → 视为相对于 PROJECT_ROOT 的绝对路径
+---   - 否则 → 视为相对于 "Script/Package/<packageName>/" 的相对路径（向后兼容旧 Package）
+---@param packageName string Package 名称（仅用于相对路径模式）
+---@param dataPath string 来自 Package_Meta 的 dataPath
+---@param base string 基础路径（导出用 exportRoot；导入用 PROJECT_ROOT）
+---@return string targetDir 去掉末尾分隔符的目录路径
+function M.resolveTargetDir(packageName, dataPath, base)
+    local cleanPath = (dataPath or ""):gsub("[/\\]+$", ""):gsub("^[/\\]+", "")
+    if cleanPath == "" then
+        return base .. "\\" .. packageName
+    end
+
+    local isAbsolute = cleanPath:match("^[A-Za-z]:")
+        or cleanPath:sub(1, 6) == "Script"
+        or cleanPath:sub(1, 4) == "Data"
+        or cleanPath:sub(1, 1) == "/"
+        or cleanPath:sub(1, 1) == "\\"
+
+    -- 标准化为反斜杠
+    cleanPath = cleanPath:gsub("/", "\\")
+
+    if isAbsolute then
+        return base .. "\\" .. cleanPath
+    else
+        return base .. "\\Script\\Package\\" .. packageName .. "\\" .. cleanPath
+    end
+end
+
 --- 导出单个 Package 的配置模板
 --- 根据 owner 名称和 dataPath 确定输出路径
 function M.exportPackage(packageName, privates, exportRoot)
@@ -443,7 +474,7 @@ function M.exportPackage(packageName, privates, exportRoot)
             print("[WARN] 跳过无 owner 的 privates 定义")
         else
             -- 目标目录（统一用反斜杠）
-            local targetDir = exportRoot .. "\\" .. packageName .. (dataPath ~= "" and "\\" .. dataPath or "")
+            local targetDir = M.resolveTargetDir(packageName, dataPath, exportRoot)
             M.ensureDir(targetDir)
 
             -- JSON 文件名：Config_XXX.json（从 owner 提取）
@@ -936,7 +967,7 @@ function M.importPackage(packageName, exportRoot, targetRoot)
         else
             -- JSON 文件路径（统一用反斜杠）
             local jsonFileName = getConfigJsonName(owner)
-            local jsonFilePath = exportRoot .. "\\" .. packageName .. (dataPath ~= "" and "\\" .. dataPath or "") .. "\\" .. jsonFileName
+            local jsonFilePath = M.resolveTargetDir(packageName, dataPath, exportRoot) .. "\\" .. jsonFileName
 
             -- 读取 JSON
             local jsonContent, readErr = readJsonFile(jsonFilePath)
@@ -960,8 +991,11 @@ function M.importPackage(packageName, exportRoot, targetRoot)
                 else
                     -- 读取现有的 Config 文件（保留原有数据结构和函数）
                     local luaFileName = getConfigLuaName(owner)
-                    local targetDir = M.PROJECT_ROOT .. "\\Script\\Package\\" .. packageName .. (dataPath ~= "" and "\\" .. dataPath or "")
+                    local targetDir = M.resolveTargetDir(packageName, dataPath, M.PROJECT_ROOT)
                     local targetPath = targetDir .. "\\" .. luaFileName
+
+                    -- 确保目标目录存在
+                    M.ensureDir(targetDir)
 
                     -- 读取现有 Lua 文件
                     local existingContent = nil
@@ -1136,10 +1170,10 @@ function M.previewImport(packageNames)
                     if owner then
                         local jsonFileName = getConfigJsonName(owner)
                         local luaFileName = getConfigLuaName(owner)
-                        local relDir = item.packageName
-                            .. (dataPath ~= "" and "\\" .. dataPath or "")
-                        local jsonFilePath = exportRoot .. "\\" .. relDir .. "\\" .. jsonFileName
-                        local luaFilePath = M.PROJECT_ROOT .. "\\Script\\Package\\" .. relDir .. "\\Data\\" .. luaFileName
+                        local jsonDir = M.resolveTargetDir(item.packageName, dataPath, exportRoot)
+                        local luaDir = M.resolveTargetDir(item.packageName, dataPath, M.PROJECT_ROOT)
+                        local jsonFilePath = jsonDir .. "\\" .. jsonFileName
+                        local luaFilePath = luaDir .. "\\" .. luaFileName
 
                         local jsonExists = io.open(jsonFilePath, "r") ~= nil
                         local luaExists = io.open(luaFilePath, "r") ~= nil

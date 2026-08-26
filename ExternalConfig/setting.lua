@@ -26,6 +26,9 @@ return {
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],
 
+    -- Lua 可执行文件路径（供 ps1 launcher 使用，避免依赖 PATH）
+    luaPath = [[D:\dev\Lua\lua54.exe]],
+
     -- JsonExportKit: 导出目标根目录（策划配置模板存放位置）
     jsonExportRoot = [[E:\Docs]],
 }
