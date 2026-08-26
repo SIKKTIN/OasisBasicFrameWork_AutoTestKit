@@ -1036,9 +1036,9 @@ function M.importPackage(packageName, exportRoot, targetRoot)
         if not owner then
             print("[WARN] 跳过无 owner 的 privates 定义")
         else
-            -- JSON 文件路径（统一用反斜杠）
+            -- JSON 文件路径（与导出端统一：固定模板 <exportRoot>/Package/<packageName>/）
             local jsonFileName = getConfigJsonName(owner)
-            local jsonFilePath = M.resolveTargetDir(packageName, dataPath, exportRoot) .. "\\" .. jsonFileName
+            local jsonFilePath = buildExportTargetDir(exportRoot, packageName) .. "\\" .. jsonFileName
 
             -- 读取 JSON
             local jsonContent, readErr = readJsonFile(jsonFilePath)
@@ -1241,7 +1241,7 @@ function M.previewImport(packageNames)
                     if owner then
                         local jsonFileName = getConfigJsonName(owner)
                         local luaFileName = getConfigLuaName(owner)
-                        local jsonDir = M.resolveTargetDir(item.packageName, dataPath, exportRoot)
+                        local jsonDir = buildExportTargetDir(exportRoot, item.packageName)
                         local luaDir = M.resolveTargetDir(item.packageName, dataPath, M.PROJECT_ROOT)
                         local jsonFilePath = jsonDir .. "\\" .. jsonFileName
                         local luaFilePath = luaDir .. "\\" .. luaFileName
@@ -1288,7 +1288,7 @@ function M.conflictCheck(packageNames)
                     if owner then
                         local jsonFileName = getConfigJsonName(owner)
                         local luaFileName = getConfigLuaName(owner)
-                        local jsonDir = M.resolveTargetDir(item.packageName, dataPath, exportRoot)
+                        local jsonDir = buildExportTargetDir(exportRoot, item.packageName)
                         local luaDir  = M.resolveTargetDir(item.packageName, dataPath, M.PROJECT_ROOT)
                         local jsonPath = jsonDir .. "\\" .. jsonFileName
                         local luaPath  = luaDir  .. "\\" .. luaFileName
