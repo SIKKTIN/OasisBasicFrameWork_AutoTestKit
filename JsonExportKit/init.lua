@@ -461,23 +461,32 @@ function M.resolveTargetDir(packageName, dataPath, base)
     end
 end
 
+--- 导出 JSON 的固定路径模板
+--- JSON 导出不再读 Package_Meta.dataPath，
+--- 而是由 exportRoot + "Package/" + packageName 拼接，
+--- 与 Lua 端的 Script/Data/Package/<Name>/ 解耦。
+---@param exportRoot string 导出根目录（来自 setting.exportRoot）
+---@param packageName string Package 名称
+---@return string targetDir 拼接后的目录（反斜杠，无末尾分隔符）
+local function buildExportTargetDir(exportRoot, packageName)
+    return (exportRoot or ""):gsub("[/\\]+$", "") .. "\\Package\\" .. packageName
+end
+
 --- 导出单个 Package 的配置模板
---- 根据 owner 名称和 dataPath 确定输出路径
+--- 根据 owner 名称确定输出文件，目录走固定模板 buildExportTargetDir
 function M.exportPackage(packageName, privates, exportRoot)
     local templates = M.parsePrivates(privates)
     if not next(templates) then
         return false, "无 privates 定义"
     end
 
-    -- 遍历 privates，按 owner + dataPath 分别导出
+    -- 遍历 privates，按 owner 派生文件名；目录走固定模板
     for _, privateDef in ipairs(privates) do
         local owner = privateDef.owner
-        local dataPath = (privateDef.dataPath or ""):gsub("[/\\]+$", ""):gsub("^[/\\]+", "")
         if not owner then
             print("[WARN] 跳过无 owner 的 privates 定义")
         else
-            -- 目标目录（统一用反斜杠）
-            local targetDir = M.resolveTargetDir(packageName, dataPath, exportRoot)
+            local targetDir = buildExportTargetDir(exportRoot, packageName)
             M.ensureDir(targetDir)
 
             -- JSON 文件名：Config_XXX.json（从 owner 提取）
@@ -635,13 +644,14 @@ local function doPreview(metas)
             if not next(templates) then
                 print("  [SKIP] 无 privates 定义")
             else
-                -- 按 owner 分别输出文件名
+                -- 按 owner 分别输出文件名（JSON 走固定模板 Package/<packageName>/）
+                local exportRoot = M.getExportRoot()
+                local previewDir = buildExportTargetDir(exportRoot, item.packageName)
                 for _, privateDef in ipairs(meta.privates or {}) do
                     local owner = privateDef.owner
-                    local dataPath = privateDef.dataPath or ""
                     if owner then
                         local fileName = getConfigJsonName(owner)
-                        print("  输出:    " .. dataPath .. fileName)
+                        print("  输出:    " .. previewDir .. "\\" .. fileName)
                     end
                 end
                 print("  内容:")
