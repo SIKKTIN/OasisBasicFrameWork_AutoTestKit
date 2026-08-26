@@ -12,6 +12,9 @@ local M = {}
 -- 引入项目级配置
 local setting = require("ExternalConfig.setting")
 
+-- 先注册自身到 package.loaded，避免循环 require
+package.loaded["init"] = M
+
 -- 项目根目录（WithDraw 项目）
 M.PROJECT_ROOT = setting.projectRoot
 

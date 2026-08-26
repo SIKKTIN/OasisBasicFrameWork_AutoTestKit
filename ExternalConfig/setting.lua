@@ -25,4 +25,7 @@ return {
 
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],
+
+    -- JsonExportKit: 导出目标根目录（策划配置模板存放位置）
+    jsonExportRoot = [[E:\Docs]],
 }
