@@ -38,6 +38,22 @@ function M.getPackageMetaIndexOutputPath()
     return M.PROJECT_ROOT .. [[\]] .. setting.packageMetaIndexPath
 end
 
+function M.getCommandConfigDir()
+    return M.PROJECT_ROOT .. [[\]] .. setting.commandConfigDir
+end
+
+function M.getCommandListOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.commandListPath
+end
+
+function M.getDebugKitScanDir()
+    return M.PROJECT_ROOT .. [[\]] .. setting.debugKitScanDir
+end
+
+function M.getDebugKitPredictionOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.debugKitPredictionPath
+end
+
 -- 向后兼容字段（外部脚本可能直接读取 M.SCRIPT_DIR）
 M.SCRIPT_DIR = M.PROJECT_ROOT .. [[\Script]]
 
@@ -685,6 +701,258 @@ function M.runGenPackageMetaIndex()
 end
 
 -- ============================================================
+-- 生成器: CommandList（仅静态扫描，不加载项目配置）
+-- ============================================================
+
+local function countChar(text, char)
+    local _, count = text:gsub("%" .. char, "")
+    return count
+end
+
+local function parseCommandConfig(filePath)
+    local f, err = io.open(filePath, "r")
+    if not f then return nil, "无法读取: " .. tostring(err) end
+    local content = f:read("*a")
+    f:close()
+
+    local namespace = content:match("namespace%s*=%s*[\"']([^\"']+)[\"']")
+    if not namespace then return nil, "未找到 namespace" end
+    if not content:match("commands%s*=%s*{") then return nil, "未找到 commands" end
+
+    local commands = {}
+    local lines = {}
+    for line in content:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
+    local active, depth, action, target, describe, argDescribe, argExample = nil, 0, nil, nil, nil, nil, nil
+    for _, line in ipairs(lines) do
+        local clean = line:gsub("%-%-[^\r\n]*", "")
+        if not active then
+            local found = clean:match("^%s*([%w_]+)%s*=%s*{%s*$")
+            if found and not clean:match("commands%s*=") then
+                active, action, target, describe, argDescribe, argExample = true, found, nil, nil, nil, nil
+                depth = 1
+            end
+        else
+            local foundTarget = clean:match("defaultTarget%s*=%s*[\"']([^\"']+)[\"']")
+            if foundTarget then target = foundTarget end
+            local foundDescribe = clean:match("describe%s*=%s*[\"']([^\"']*)[\"']")
+            if foundDescribe then describe = foundDescribe end
+            local foundArgDescribe = clean:match("argDescribe%s*=%s*[\"']([^\"']*)[\"']")
+            if foundArgDescribe then argDescribe = foundArgDescribe end
+            local foundArgExample = clean:match("argExample%s*=%s*[\"']([^\"']*)[\"']")
+            if foundArgExample then argExample = foundArgExample end
+            depth = depth + countChar(clean, "{") - countChar(clean, "}")
+            if depth <= 0 then
+                commands[#commands + 1] = {
+                    action = action,
+                    target = target or "Both",
+                    describe = describe or "",
+                    argDescribe = argDescribe or "",
+                    argExample = argExample or "",
+                }
+                active, action, target, describe, argDescribe, argExample = nil, nil, nil, nil, nil, nil
+            end
+        end
+    end
+    return { namespace = namespace, commands = commands }
+end
+
+local function commandEscape(value)
+    return tostring(value):gsub("\\", "\\\\"):gsub("\"", "\\\"")
+end
+
+function M.genCommandList()
+    local dir = M.getCommandConfigDir()
+    local files = M.scanLuaFiles(dir)
+    local results = { files = {}, commands = {}, warnings = {}, success = true }
+    for _, filePath in ipairs(files) do
+        if filePath:match("[\\/]Config_Command_[^\\/]+%.lua$") then
+            local config, err = parseCommandConfig(filePath)
+            if not config then
+                results.warnings[#results.warnings + 1] = filePath .. ": " .. err
+            else
+                results.files[#results.files + 1] = filePath
+                for _, command in ipairs(config.commands) do
+                    local commandText = string.format("cmd -s default -t both -%s -%s", config.namespace, command.action)
+                    if command.argExample ~= "" then
+                        commandText = commandText .. " \"" .. commandEscape(command.argExample) .. "\""
+                    end
+                    local description = command.describe
+                    if command.argDescribe ~= "" then
+                        description = description .. "。" .. command.argDescribe
+                    end
+                    results.commands[#results.commands + 1] = {
+                        namespace = config.namespace,
+                        action = command.action,
+                        target = command.target,
+                        describe = description,
+                        interpreter = "default",
+                        command = commandText,
+                    }
+                end
+            end
+        end
+    end
+    table.sort(results.commands, function(a, b)
+        if a.namespace == b.namespace then return a.action:lower() < b.action:lower() end
+        return a.namespace:lower() < b.namespace:lower()
+    end)
+    local seen = {}
+    for _, item in ipairs(results.commands) do
+        local key = item.namespace:lower() .. "." .. item.action:lower()
+        if seen[key] then
+            results.warnings[#results.warnings + 1] = "重复指令: " .. item.namespace .. "." .. item.action
+        end
+        seen[key] = true
+    end
+    return results
+end
+
+function M.previewCommandList()
+    local results = M.genCommandList()
+    local outputPath = M.getCommandListOutputPath()
+    print("扫描目录: " .. M.getCommandConfigDir())
+    print("配置文件数: " .. #results.files)
+    print("指令数: " .. #results.commands)
+    print("写入位置: " .. outputPath)
+    for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    for _, item in ipairs(results.commands) do
+        print("  " .. item.command)
+        if item.describe ~= "" then print("    " .. item.describe) end
+    end
+    return true, nil, results
+end
+
+function M.writeCommandList(results)
+    local outputPath = M.getCommandListOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- CommandList.lua\n-- 由 GenKit 自动生成，请勿手动编辑\n\n")
+    f:write("return {\n    text = {\n")
+    for _, item in ipairs(results.commands) do
+        f:write(string.format("        { command = \"%s\", describe = \"%s\" },\n",
+            commandEscape(item.command), commandEscape(item.describe)))
+    end
+    f:write("    },\n}\n")
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
+end
+
+function M.runGenCommandList()
+    local ok, err, results = M.previewCommandList()
+    if not ok then return false, err end
+    io.write("确认写入? [Y/N]: ")
+    io.flush()
+    local confirm = (io.read() or ""):lower():gsub("^%s*(.-)%s*$", "%1")
+    if confirm ~= "y" and confirm ~= "yes" then return false, "用户取消" end
+    return M.writeCommandList(results)
+end
+
+-- ============================================================
+-- 生成器: DebugKitPrediction（静态扫描 Log 调用）
+-- ============================================================
+
+local function parseDebugKitId(expression)
+    local key = expression:match("Global_DebugKit%.ID%.([%w_]+)")
+    if key then
+        if key == "LIFECYCLE" then return "Lifecycle" end
+        return key
+    end
+    local literal = expression:match("^[%s]*[\"']([^\"']+)[\"']%s*$")
+    return literal
+end
+
+local function parseDebugKitTarget(expression)
+    local key = expression:match("Global_DebugKit%.Target%.([%w_]+)")
+    if key then return ({ CLIENT = "Client", SERVER = "Server", BOTH = "Both" })[key] end
+    local literal = expression:match("^[%s]*[\"']([^\"']+)[\"']%s*$")
+    if literal == "Client" or literal == "Server" or literal == "Both" then return literal end
+    return nil
+end
+
+local function parseDebugKitCalls(filePath, relativePath, content)
+    local calls, warnings = {}, {}
+    local lines, pending, startLine = {}, nil, nil
+    for line in content:gmatch("[^\r\n]+") do
+        lines[#lines + 1] = line
+    end
+    local function consume(chunk, lineNo)
+        local idExpr, nodeExpr, targetExpr = chunk:match("Global_DebugKit%.Log%s*%(%s*(.-)%s*,%s*(.-)%s*,%s*(.-)%s*%)")
+        if not idExpr then return false end
+        local id = parseDebugKitId(idExpr)
+        local target = parseDebugKitTarget(targetExpr)
+        local node = nodeExpr:match("^[%s]*[\"']([^\"']*)[\"']%s*$")
+        if not id then warnings[#warnings + 1] = string.format("%s:%d 未识别 ID: %s", relativePath, lineNo, idExpr) end
+        if not target then warnings[#warnings + 1] = string.format("%s:%d 未识别 Target: %s", relativePath, lineNo, targetExpr) end
+        if id and target and node then
+            calls[#calls + 1] = { id = id, name = node, target = target, source = relativePath, line = lineNo }
+        end
+        return true
+    end
+    for lineNo, line in ipairs(lines) do
+        if pending then
+            pending = pending .. " " .. line
+            if consume(pending, startLine) then pending, startLine = nil, nil end
+        elseif line:find("Global_DebugKit%.Log%s*%(") then
+            pending, startLine = line, lineNo
+            if consume(pending, startLine) then pending, startLine = nil, nil end
+        end
+    end
+    if pending then warnings[#warnings + 1] = string.format("%s:%d Log 调用未闭合或参数无法解析", relativePath, startLine) end
+    return calls, warnings
+end
+
+function M.genDebugKitPrediction()
+    local files = M.scanLuaFiles(M.getDebugKitScanDir())
+    local results = { predictions = {}, warnings = {}, totalFiles = #files, totalCalls = 0 }
+    for _, filePath in ipairs(files) do
+        local f = io.open(filePath, "r")
+        if f then
+            local content = f:read("*a"); f:close()
+            local relativePath = M.absPathToRelative(filePath) or filePath
+            if not relativePath:match("^Script[/\\]") then relativePath = "Script/" .. relativePath end
+            local calls, warnings = parseDebugKitCalls(filePath, relativePath, content)
+            for _, warning in ipairs(warnings) do results.warnings[#results.warnings + 1] = warning end
+            for _, call in ipairs(calls) do
+                local prediction = results.predictions[call.id]
+                if not prediction then prediction = { name = call.id, client = 0, server = 0, nodes = {} }; results.predictions[call.id] = prediction end
+                if call.target == "Client" or call.target == "Both" then prediction.client = prediction.client + 1 end
+                if call.target == "Server" or call.target == "Both" then prediction.server = prediction.server + 1 end
+                prediction.nodes[#prediction.nodes + 1] = call
+                results.totalCalls = results.totalCalls + 1
+            end
+        else
+            results.warnings[#results.warnings + 1] = "无法读取: " .. filePath
+        end
+    end
+    return results
+end
+
+function M.writeDebugKitPrediction(results)
+    local outputPath = M.getDebugKitPredictionOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- DebugKitPrediction.lua\n-- 由 GenKit 自动生成，请勿手动编辑\n\nreturn {\n")
+    local ids = {}; for id in pairs(results.predictions) do ids[#ids + 1] = id end; table.sort(ids)
+    for _, id in ipairs(ids) do
+        local p = results.predictions[id]
+        f:write(string.format("    [\"%s\"] = { name = \"%s\", client = %d, server = %d, nodes = {\n", commandEscape(id), commandEscape(p.name), p.client, p.server))
+        table.sort(p.nodes, function(a,b) return a.source .. ":" .. a.line < b.source .. ":" .. b.line end)
+        for _, n in ipairs(p.nodes) do f:write(string.format("        { name = \"%s\", target = \"%s\", source = \"%s\", line = %d },\n", commandEscape(n.name), commandEscape(n.target), commandEscape(n.source), n.line)) end
+        f:write("        },\n    },\n")
+    end
+    f:write("}\n"); f:close(); print("生成完成: " .. outputPath); return true, nil
+end
+
+function M.runGenDebugKitPrediction()
+    local results = M.genDebugKitPrediction()
+    print("扫描文件数: " .. results.totalFiles .. "，识别调用数: " .. results.totalCalls)
+    for id, p in pairs(results.predictions) do print(string.format("  %s: Client %d / Server %d", id, p.client, p.server)) end
+    for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    return M.writeDebugKitPrediction(results)
+end
+
+-- ============================================================
 -- 注册的工具函数
 -- ============================================================
 
@@ -706,6 +974,18 @@ M.tools = {
         name = "生成 Package_Meta_Index.lua",
         description = "扫描 Package 目录，收集所有 Package_Meta 文件，生成 Package_Meta_Index.lua（供 Core 层统一访问 Meta）",
         run = M.runGenPackageMetaIndex,
+    },
+    {
+        id = "gen_command_list",
+        name = "生成默认指令清单",
+        description = "扫描 CommandSystem 配置，生成默认解释器和 Both 端指令清单",
+        run = M.runGenCommandList,
+    },
+    {
+        id = "gen_debugkit_prediction",
+        name = "生成 DebugKit 预测配置",
+        description = "扫描 DebugKit.Log 调用，生成按检测线和目标端统计的预测配置",
+        run = M.runGenDebugKitPrediction,
     },
 }
 

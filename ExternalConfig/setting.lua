@@ -9,7 +9,7 @@
 
 return {
     -- 被测业务项目根目录
-    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]],
+    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\DayBreakDefenseDemoV1]],
 
     -- TestHelper 工具根目录
     testHelperRoot = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]],
@@ -22,6 +22,14 @@ return {
 
     -- Package_Meta_Index 生成文件路径（相对于 projectRoot）
     packageMetaIndexPath = [[Script\Setting\Package_Meta_Index.lua]],
+
+    -- CommandSystem 配置扫描目录和指令清单输出路径（相对于 projectRoot）
+    commandConfigDir = [[Script\Core\CommandSystem\Config]],
+    commandListPath = [[Script\Setting\CommandList.lua]],
+
+    -- DebugKit 预测扫描目录和输出路径（相对于 projectRoot）
+    debugKitScanDir = [[Script]],
+    debugKitPredictionPath = [[Script\Setting\DebugKitPrediction.lua]],
 
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],
