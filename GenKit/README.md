@@ -134,6 +134,29 @@ end
 > **变更说明**：旧版 `BeginPlay()` / `Get()` / `ForEach()` 已被删除，统一改为单 `Load()` API。
 > `Load()` 每次都重新 `require`，但 Lua 的 `package.loaded` 自带模块缓存，第二次同路径几乎零开销。
 
+### 4. 生成 Core_Registry.lua
+
+递归扫描 `setting.coreScanDir` 下所有 `Global_*.lua`，生成 Core 生命周期注册表。
+
+**输出文件**：
+```text
+Script/Setting/Core_Registry.lua
+```
+
+注册表提供：
+```lua
+Core_Registry.BeginPlay()
+Core_Registry.Tick(deltaTime)
+```
+
+- 模块存在 `BeginPlay` 时自动调用，不存在则只加载。
+- 模块存在 `Tick` 时由注册表逐帧分发。
+- 单个模块加载或 BeginPlay 失败不会阻断其他 Core。
+- Tick 首次失败后会停用对应模块，避免每帧重复报错。
+- 非 `Global_` 前缀的 Core 不会进入注册表，继续由业务手工管理。
+
+新增、移动或删除 Global Core 后，重新运行“生成 Core_Registry.lua”。
+
 ## 扩展新工具
 
 在 `GenKit/init.lua` 中添加新的生成器：
@@ -169,6 +192,10 @@ return {
 
     -- 项目全局白名单文件（相对于 projectRoot）
     projectGlobalsPath = [[Script\Setting\Project_Globals.lua]],
+
+    -- Core Global 扫描目录和注册表输出路径（相对于 projectRoot）
+    coreScanDir = [[Script\Core]],
+    coreRegistryPath = [[Script\Setting\Core_Registry.lua]],
 }
 ```
 
@@ -177,3 +204,5 @@ GenKit 启动时通过 `require("ExternalConfig.setting")` 读取上述字段，
 - `GenKit.PROJECT_ROOT` — 业务项目根目录
 - `GenKit.getScriptDir()` — Lua 源码目录
 - `GenKit.getProjectGlobalsOutputPath()` — Project_Globals.lua 绝对路径
+- `GenKit.getCoreScanDir()` — Core Global 扫描目录
+- `GenKit.getCoreRegistryOutputPath()` — Core_Registry.lua 绝对路径

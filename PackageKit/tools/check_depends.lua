@@ -55,19 +55,23 @@ local function scanPackageMetas(projectRoot)
 end
 
 -- 解析 Package_Meta 中的 dependsOn
-local function parseDependsOn(metaPath)
+local function parseDependsOn(metaPath, projectRoot)
+    local oldPackagePath = package.path
+    package.path = projectRoot .. [[\?.lua;]] .. oldPackagePath
     local chunk, err = loadfile(metaPath)
     if not chunk then
-        return nil
+        package.path = oldPackagePath
+        return nil, err
     end
     local ok, result = pcall(chunk)
+    package.path = oldPackagePath
     if not ok then
-        return nil
+        return nil, result
     end
     if type(result) ~= "table" then
-        return nil
+        return nil, "Package_Meta 必须返回 table"
     end
-    return result.dependsOn
+    return result.dependsOn, nil
 end
 
 -- 检查单个依赖是否在 Project_Globals 中
@@ -112,12 +116,17 @@ function M.run(projectRoot)
     result.totalPackages = #metas
 
     for _, meta in ipairs(metas) do
-        local dependsOn = parseDependsOn(meta.path)
+        local dependsOn, metaError = parseDependsOn(meta.path, projectRoot)
         local pkgResult = {
             packageName = meta.packageName,
             dependsOn = dependsOn,
+            error = metaError,
             deps = {},
         }
+
+        if metaError then
+            result.errors = result.errors + 1
+        end
 
         if dependsOn and type(dependsOn) == "table" then
             for _, depName in ipairs(dependsOn) do
@@ -155,7 +164,9 @@ function M.printReport(result)
         print("")
         print("  [" .. pkg.packageName .. "]")
 
-        if not pkg.dependsOn or #pkg.dependsOn == 0 then
+        if pkg.error then
+            print("  ✗ Package_Meta 加载失败: " .. tostring(pkg.error))
+        elseif not pkg.dependsOn or #pkg.dependsOn == 0 then
             print("    (无 dependsOn)")
         else
             for _, dep in ipairs(pkg.deps) do

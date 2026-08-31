@@ -23,13 +23,23 @@ return {
     -- Package_Meta_Index 生成文件路径（相对于 projectRoot）
     packageMetaIndexPath = [[Script\Setting\Package_Meta_Index.lua]],
 
-    -- CommandSystem 配置扫描目录和指令清单输出路径（相对于 projectRoot）
-    commandConfigDir = [[Script\Core\CommandSystem\Config]],
+    -- Core Global 扫描目录和生命周期注册表输出路径（相对于 projectRoot）
+    coreScanDir = [[Script\Core]],
+    coreRegistryPath = [[Script\Setting\Core_Registry.lua]],
+
+    -- CommandSystem 配置扫描目录、运行时索引和指令清单路径（相对于 projectRoot）
+    commandConfigDir = [[Script\Config\Command]],
+    commandConfigIndexPath = [[Script\Setting\CommandConfigIndex.lua]],
     commandListPath = [[Script\Setting\CommandList.lua]],
 
     -- DebugKit 预测扫描目录和输出路径（相对于 projectRoot）
     debugKitScanDir = [[Script]],
+    debugKitLineConfigPath = [[Script\Const\Core\Const_DebugKit.lua]],
     debugKitPredictionPath = [[Script\Setting\DebugKitPrediction.lua]],
+
+    -- AutoTestKit Suite 扫描目录和运行时索引输出路径（相对于 projectRoot）
+    autoTestSuiteDir = [[Script\Config\AutoTestSuite]],
+    autoTestSuiteIndexPath = [[Script\Setting\AutoTestSuiteIndex.lua]],
 
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],

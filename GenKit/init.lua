@@ -38,8 +38,20 @@ function M.getPackageMetaIndexOutputPath()
     return M.PROJECT_ROOT .. [[\]] .. setting.packageMetaIndexPath
 end
 
+function M.getCoreScanDir()
+    return M.PROJECT_ROOT .. [[\]] .. setting.coreScanDir
+end
+
+function M.getCoreRegistryOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.coreRegistryPath
+end
+
 function M.getCommandConfigDir()
     return M.PROJECT_ROOT .. [[\]] .. setting.commandConfigDir
+end
+
+function M.getCommandConfigIndexOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.commandConfigIndexPath
 end
 
 function M.getCommandListOutputPath()
@@ -50,8 +62,20 @@ function M.getDebugKitScanDir()
     return M.PROJECT_ROOT .. [[\]] .. setting.debugKitScanDir
 end
 
+function M.getDebugKitLineConfigPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.debugKitLineConfigPath
+end
+
 function M.getDebugKitPredictionOutputPath()
     return M.PROJECT_ROOT .. [[\]] .. setting.debugKitPredictionPath
+end
+
+function M.getAutoTestSuiteDir()
+    return M.PROJECT_ROOT .. [[\]] .. setting.autoTestSuiteDir
+end
+
+function M.getAutoTestSuiteIndexOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.autoTestSuiteIndexPath
 end
 
 -- 向后兼容字段（外部脚本可能直接读取 M.SCRIPT_DIR）
@@ -722,13 +746,13 @@ local function parseCommandConfig(filePath)
     local commands = {}
     local lines = {}
     for line in content:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
-    local active, depth, action, target, describe, argDescribe, argExample = nil, 0, nil, nil, nil, nil, nil
+    local active, depth, action, target, describe, argDescribe, argExamples, includeBaseExample = nil, 0, nil, nil, nil, nil, nil, nil
     for _, line in ipairs(lines) do
         local clean = line:gsub("%-%-[^\r\n]*", "")
         if not active then
             local found = clean:match("^%s*([%w_]+)%s*=%s*{%s*$")
             if found and not clean:match("commands%s*=") then
-                active, action, target, describe, argDescribe, argExample = true, found, nil, nil, nil, nil
+                active, action, target, describe, argDescribe, argExamples, includeBaseExample = true, found, nil, nil, nil, {}, false
                 depth = 1
             end
         else
@@ -739,7 +763,17 @@ local function parseCommandConfig(filePath)
             local foundArgDescribe = clean:match("argDescribe%s*=%s*[\"']([^\"']*)[\"']")
             if foundArgDescribe then argDescribe = foundArgDescribe end
             local foundArgExample = clean:match("argExample%s*=%s*[\"']([^\"']*)[\"']")
-            if foundArgExample then argExample = foundArgExample end
+            if foundArgExample then argExamples = { foundArgExample } end
+            local foundArgExamples = clean:match("argExamples%s*=%s*{(.-)}")
+            if foundArgExamples then
+                argExamples = {}
+                for value in foundArgExamples:gmatch("[\"']([^\"']*)[\"']") do
+                    argExamples[#argExamples + 1] = value
+                end
+            end
+            if clean:match("includeBaseExample%s*=%s*true") then
+                includeBaseExample = true
+            end
             depth = depth + countChar(clean, "{") - countChar(clean, "}")
             if depth <= 0 then
                 commands[#commands + 1] = {
@@ -747,9 +781,10 @@ local function parseCommandConfig(filePath)
                     target = target or "Both",
                     describe = describe or "",
                     argDescribe = argDescribe or "",
-                    argExample = argExample or "",
+                    argExamples = argExamples or {},
+                    includeBaseExample = includeBaseExample,
                 }
-                active, action, target, describe, argDescribe, argExample = nil, nil, nil, nil, nil, nil
+                active, action, target, describe, argDescribe, argExamples, includeBaseExample = nil, nil, nil, nil, nil, nil, nil
             end
         end
     end
@@ -758,6 +793,104 @@ end
 
 local function commandEscape(value)
     return tostring(value):gsub("\\", "\\\\"):gsub("\"", "\\\"")
+end
+
+local function commandConfigDirectoryExists(path)
+    local ok, _, code = os.rename(path, path)
+    return ok or code == 13
+end
+
+local function toCommandConfigModulePath(filePath)
+    local relativePath = M.absPathToRelative(filePath)
+    if not relativePath then
+        return nil, "无法转换为 Script 相对路径"
+    end
+
+    local segments = {}
+    for segment in relativePath:gmatch("[^/\\]+") do
+        if not segment:match("^[%a_][%w_]*$") then
+            return nil, "路径片段不是合法 Lua 模块名: " .. segment
+        end
+        segments[#segments + 1] = segment
+    end
+    if #segments == 0 then
+        return nil, "模块路径为空"
+    end
+    return "Script." .. table.concat(segments, ".")
+end
+
+function M.genCommandConfigIndex()
+    local dir = M.getCommandConfigDir()
+    local results = {
+        files = {},
+        modules = {},
+        warnings = {},
+        success = true,
+        error = nil,
+    }
+
+    if not commandConfigDirectoryExists(dir) then
+        results.success = false
+        results.error = "Command 配置目录不存在: " .. dir
+        return results
+    end
+
+    local files = M.scanLuaFiles(dir)
+    table.sort(files, function(a, b) return a:lower() < b:lower() end)
+
+    local seen = {}
+    for _, filePath in ipairs(files) do
+        if filePath:match("[\\/]Config_Command_[^\\/]+%.lua$") then
+            results.files[#results.files + 1] = filePath
+            local modulePath, err = toCommandConfigModulePath(filePath)
+            if not modulePath then
+                results.warnings[#results.warnings + 1] = filePath .. ": " .. err
+            else
+                local key = modulePath:lower()
+                if seen[key] then
+                    results.warnings[#results.warnings + 1] = "重复命令配置模块路径: " .. modulePath
+                else
+                    seen[key] = true
+                    results.modules[#results.modules + 1] = modulePath
+                end
+            end
+        end
+    end
+
+    table.sort(results.modules, function(a, b) return a:lower() < b:lower() end)
+    return results
+end
+
+function M.previewCommandConfigIndex()
+    local results = M.genCommandConfigIndex()
+    print("运行时索引扫描目录: " .. M.getCommandConfigDir())
+    print("命令配置文件数: " .. #results.files)
+    print("有效模块数: " .. #results.modules)
+    print("索引写入位置: " .. M.getCommandConfigIndexOutputPath())
+    if not results.success then
+        return false, results.error, results
+    end
+    for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    for _, modulePath in ipairs(results.modules) do print("  " .. modulePath) end
+    return true, nil, results
+end
+
+function M.writeCommandConfigIndex(results)
+    if not results or not results.success then
+        return false, results and results.error or "无有效的生成结果"
+    end
+
+    local outputPath = M.getCommandConfigIndexOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- CommandConfigIndex.lua\n-- 由 GenKit 自动生成，请勿手动编辑\n\nreturn {\n")
+    for _, modulePath in ipairs(results.modules) do
+        f:write(string.format("    \"%s\",\n", commandEscape(modulePath)))
+    end
+    f:write("}\n")
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
 end
 
 function M.genCommandList()
@@ -772,22 +905,29 @@ function M.genCommandList()
             else
                 results.files[#results.files + 1] = filePath
                 for _, command in ipairs(config.commands) do
-                    local commandText = string.format("cmd -s default -t both -%s -%s", config.namespace, command.action)
-                    if command.argExample ~= "" then
-                        commandText = commandText .. " \"" .. commandEscape(command.argExample) .. "\""
+                    local baseCommandText = string.format("cmd -s default -t both -%s -%s", config.namespace, command.action)
+                    local commandText = baseCommandText
+                    for _, argExample in ipairs(command.argExamples) do
+                        commandText = commandText .. " \"" .. commandEscape(argExample) .. "\""
                     end
                     local description = command.describe
                     if command.argDescribe ~= "" then
                         description = description .. "。" .. command.argDescribe
                     end
-                    results.commands[#results.commands + 1] = {
-                        namespace = config.namespace,
-                        action = command.action,
-                        target = command.target,
-                        describe = description,
-                        interpreter = "default",
-                        command = commandText,
-                    }
+                    local function addCommand(text)
+                        results.commands[#results.commands + 1] = {
+                            namespace = config.namespace,
+                            action = command.action,
+                            target = command.target,
+                            describe = description,
+                            interpreter = "default",
+                            command = text,
+                        }
+                    end
+                    if command.includeBaseExample then addCommand(baseCommandText) end
+                    if commandText ~= baseCommandText or not command.includeBaseExample then
+                        addCommand(commandText)
+                    end
                 end
             end
         end
@@ -798,7 +938,7 @@ function M.genCommandList()
     end)
     local seen = {}
     for _, item in ipairs(results.commands) do
-        local key = item.namespace:lower() .. "." .. item.action:lower()
+        local key = item.command:lower()
         if seen[key] then
             results.warnings[#results.warnings + 1] = "重复指令: " .. item.namespace .. "." .. item.action
         end
@@ -848,18 +988,84 @@ function M.runGenCommandList()
     return M.writeCommandList(results)
 end
 
+function M.runGenCommandSystemArtifacts()
+    local indexOk, indexErr, indexResults = M.previewCommandConfigIndex()
+    if not indexOk then return false, indexErr end
+
+    local listOk, listErr, listResults = M.previewCommandList()
+    if not listOk then return false, listErr end
+
+    io.write("确认同时写入命令配置索引和指令清单? [Y/N]: ")
+    io.flush()
+    local confirm = (io.read() or ""):lower():gsub("^%s*(.-)%s*$", "%1")
+    if confirm ~= "y" and confirm ~= "yes" then return false, "用户取消" end
+
+    local writeIndexOk, writeIndexErr = M.writeCommandConfigIndex(indexResults)
+    if not writeIndexOk then return false, writeIndexErr end
+    return M.writeCommandList(listResults)
+end
+
 -- ============================================================
 -- 生成器: DebugKitPrediction（静态扫描 Log 调用）
 -- ============================================================
 
-local function parseDebugKitId(expression)
-    local key = expression:match("Global_DebugKit%.ID%.([%w_]+)")
-    if key then
-        if key == "LIFECYCLE" then return "Lifecycle" end
-        return key
+local function parseDebugKitLineConfigs()
+    local path = M.getDebugKitLineConfigPath()
+    local f, err = io.open(path, "r")
+    if not f then return nil, "无法读取检测线配置: " .. tostring(err) end
+    local content = f:read("*a")
+    f:close()
+
+    local body = content:match(
+        "Const_DebugKit%.Lines%s*=%s*{(.-)\n}%s*\n%s*Const_DebugKit%.ID")
+    if not body then return nil, "未找到 Const_DebugKit.Lines 配置块" end
+
+    local configs = { bySymbol = {}, byID = {}, byName = {} }
+    local active, depth
+    for line in body:gmatch("[^\r\n]+") do
+        local clean = line:gsub("%-%-.*$", "")
+        if not active then
+            local symbol = clean:match("^%s*([%w_]+)%s*=%s*{")
+            if symbol then
+                active = { symbol = symbol }
+                depth = countChar(clean, "{") - countChar(clean, "}")
+            end
+        else
+            active.id = active.id or tonumber(clean:match("id%s*=%s*(%d+)"))
+            active.name = active.name or clean:match("name%s*=%s*[\"']([^\"']+)[\"']")
+            local typeKey = clean:match("type%s*=%s*Const_DebugKit%.LineType%.([%w_]+)")
+            if typeKey then
+                active.type = ({ GAME = "Game", PLAYER = "Player" })[typeKey]
+            end
+            depth = depth + countChar(clean, "{") - countChar(clean, "}")
+            if depth <= 0 then
+                if not active.id or not active.name or not active.type then
+                    return nil, "检测线配置字段不完整: " .. tostring(active.symbol)
+                end
+                if configs.byID[active.id] then
+                    return nil, "检测线 ID 重复: " .. tostring(active.id)
+                end
+                local nameKey = active.name:lower()
+                if configs.byName[nameKey] then
+                    return nil, "检测线 name 重复: " .. active.name
+                end
+                configs.bySymbol[active.symbol] = active
+                configs.byID[active.id] = active
+                configs.byName[nameKey] = active
+                active = nil
+            end
+        end
     end
-    local literal = expression:match("^[%s]*[\"']([^\"']+)[\"']%s*$")
-    return literal
+    return configs
+end
+
+local function parseDebugKitLine(expression, configs)
+    local symbol = expression:match("Global_DebugKit%.ID%.([%w_]+)")
+    if symbol then return configs.bySymbol[symbol] end
+    local numericID = tonumber(expression:match("^%s*(%d+)%s*$"))
+    if numericID then return configs.byID[numericID] end
+    local literal = expression:match("^%s*[\"']([^\"']+)[\"']%s*$")
+    return literal and configs.byName[literal:lower()] or nil
 end
 
 local function parseDebugKitTarget(expression)
@@ -870,52 +1076,169 @@ local function parseDebugKitTarget(expression)
     return nil
 end
 
-local function parseDebugKitCalls(filePath, relativePath, content)
-    local calls, warnings = {}, {}
-    local lines, pending, startLine = {}, nil, nil
-    for line in content:gmatch("[^\r\n]+") do
-        lines[#lines + 1] = line
-    end
-    local function consume(chunk, lineNo)
-        local idExpr, nodeExpr, targetExpr = chunk:match("Global_DebugKit%.Log%s*%(%s*(.-)%s*,%s*(.-)%s*,%s*(.-)%s*%)")
-        if not idExpr then return false end
-        local id = parseDebugKitId(idExpr)
-        local target = parseDebugKitTarget(targetExpr)
-        local node = nodeExpr:match("^[%s]*[\"']([^\"']*)[\"']%s*$")
-        if not id then warnings[#warnings + 1] = string.format("%s:%d 未识别 ID: %s", relativePath, lineNo, idExpr) end
-        if not target then warnings[#warnings + 1] = string.format("%s:%d 未识别 Target: %s", relativePath, lineNo, targetExpr) end
-        if id and target and node then
-            calls[#calls + 1] = { id = id, name = node, target = target, source = relativePath, line = lineNo }
+local function splitLuaArguments(text)
+    local args, startIndex = {}, 1
+    local roundDepth, braceDepth, bracketDepth = 0, 0, 0
+    local quote, escaped = nil, false
+    for index = 1, #text do
+        local char = text:sub(index, index)
+        if quote then
+            if escaped then
+                escaped = false
+            elseif char == "\\" then
+                escaped = true
+            elseif char == quote then
+                quote = nil
+            end
+        elseif char == "\"" or char == "'" then
+            quote = char
+        elseif char == "(" then roundDepth = roundDepth + 1
+        elseif char == ")" then roundDepth = roundDepth - 1
+        elseif char == "{" then braceDepth = braceDepth + 1
+        elseif char == "}" then braceDepth = braceDepth - 1
+        elseif char == "[" then bracketDepth = bracketDepth + 1
+        elseif char == "]" then bracketDepth = bracketDepth - 1
+        elseif char == "," and roundDepth == 0 and braceDepth == 0 and bracketDepth == 0 then
+            args[#args + 1] = text:sub(startIndex, index - 1):match("^%s*(.-)%s*$")
+            startIndex = index + 1
         end
-        return true
     end
-    for lineNo, line in ipairs(lines) do
-        if pending then
-            pending = pending .. " " .. line
-            if consume(pending, startLine) then pending, startLine = nil, nil end
-        elseif line:find("Global_DebugKit%.Log%s*%(") then
-            pending, startLine = line, lineNo
-            if consume(pending, startLine) then pending, startLine = nil, nil end
+    args[#args + 1] = text:sub(startIndex):match("^%s*(.-)%s*$")
+    return args
+end
+
+local function findCallEnd(content, openIndex)
+    local depth, quote, escaped = 1, nil, false
+    for index = openIndex + 1, #content do
+        local char = content:sub(index, index)
+        if quote then
+            if escaped then
+                escaped = false
+            elseif char == "\\" then
+                escaped = true
+            elseif char == quote then
+                quote = nil
+            end
+        elseif char == "\"" or char == "'" then
+            quote = char
+        elseif char == "(" then
+            depth = depth + 1
+        elseif char == ")" then
+            depth = depth - 1
+            if depth == 0 then return index end
         end
     end
-    if pending then warnings[#warnings + 1] = string.format("%s:%d Log 调用未闭合或参数无法解析", relativePath, startLine) end
+    return nil
+end
+
+local function parseDebugKitCalls(relativePath, content, configs)
+    local calls, warnings, searchIndex = {}, {}, 1
+    while true do
+        local callStart, matchEnd = content:find("Global_DebugKit%.Log%s*%(", searchIndex)
+        local helperStart = content:find("LogPlayerNode%s*%(", searchIndex)
+        local isHelper = false
+        if helperStart and (not callStart or helperStart < callStart) then
+            callStart, isHelper = helperStart, true
+        end
+        if not callStart then break end
+        local openIndex = content:find("%(", callStart)
+        local closeIndex = openIndex and findCallEnd(content, openIndex) or nil
+        local _, newlineCount = content:sub(1, callStart):gsub("\n", "\n")
+        local lineNumber = newlineCount + 1
+        if not closeIndex then
+            warnings[#warnings + 1] = string.format(
+                "%s:%d Log 调用未闭合", relativePath, lineNumber)
+            break
+        end
+
+        local prefix = content:sub(math.max(1, callStart - 20), callStart - 1)
+        if isHelper and prefix:match("function%s*$") then
+            searchIndex = closeIndex + 1
+            goto continue
+        end
+
+        local args = splitLuaArguments(content:sub(openIndex + 1, closeIndex - 1))
+        local line = args[1] and parseDebugKitLine(args[1], configs) or nil
+        local node = args[2] and args[2]:match("^%s*[\"']([^\"']*)[\"']%s*$") or nil
+        local target = args[3] and parseDebugKitTarget(args[3]) or nil
+        if isHelper then
+            line = configs.bySymbol.PLAYER_LIFECYCLE
+            node = args[3] and args[3]:match("^%s*[\"']([^\"']*)[\"']%s*$") or nil
+            target = args[4] and parseDebugKitTarget(args[4]) or nil
+        end
+        -- LogPlayerNode 内部的动态 Global_DebugKit.Log 是转发实现，不重复计数。
+        if not isHelper and not line and args[1] and args[1]:match("^%s*Global_DebugKit%.ID%.") == nil
+            and not node and not target then
+            searchIndex = closeIndex + 1
+            goto continue
+        end
+        if not line then
+            warnings[#warnings + 1] = string.format(
+                "%s:%d 未识别检测线: %s", relativePath, lineNumber, tostring(args[1]))
+        end
+        if not node then
+            warnings[#warnings + 1] = string.format(
+                "%s:%d 未识别节点名称: %s", relativePath, lineNumber, tostring(args[2]))
+        end
+        if not target then
+            warnings[#warnings + 1] = string.format(
+                "%s:%d 未识别 Target: %s", relativePath, lineNumber, tostring(args[3]))
+        end
+        if line and node and target then
+            calls[#calls + 1] = {
+                id = line.id,
+                name = node,
+                lineName = line.name,
+                lineType = line.type,
+                target = target,
+                playerKey = args[4],
+                source = relativePath,
+                line = lineNumber,
+            }
+        end
+        searchIndex = closeIndex + 1
+        ::continue::
+    end
     return calls, warnings
 end
 
 function M.genDebugKitPrediction()
     local files = M.scanLuaFiles(M.getDebugKitScanDir())
-    local results = { predictions = {}, warnings = {}, totalFiles = #files, totalCalls = 0 }
+    local results = {
+        predictions = {}, warnings = {}, totalFiles = #files,
+        totalCalls = 0, success = true, error = nil,
+    }
+    local configs, configError = parseDebugKitLineConfigs()
+    if not configs then
+        results.success = false
+        results.error = configError
+        return results
+    end
     for _, filePath in ipairs(files) do
         local f = io.open(filePath, "r")
         if f then
             local content = f:read("*a"); f:close()
-            local relativePath = M.absPathToRelative(filePath) or filePath
-            if not relativePath:match("^Script[/\\]") then relativePath = "Script/" .. relativePath end
-            local calls, warnings = parseDebugKitCalls(filePath, relativePath, content)
+            local relativePath = M.absPathToRelative(filePath)
+            if relativePath then
+                relativePath = "Script/" .. relativePath .. ".lua"
+            else
+                relativePath = filePath
+            end
+            local calls, warnings = parseDebugKitCalls(relativePath, content, configs)
             for _, warning in ipairs(warnings) do results.warnings[#results.warnings + 1] = warning end
             for _, call in ipairs(calls) do
                 local prediction = results.predictions[call.id]
-                if not prediction then prediction = { name = call.id, client = 0, server = 0, nodes = {} }; results.predictions[call.id] = prediction end
+                if not prediction then
+                    prediction = {
+                        id = call.id,
+                        name = call.lineName,
+                        type = call.lineType,
+                        client = 0,
+                        server = 0,
+                        nodes = {},
+                    }
+                    results.predictions[call.id] = prediction
+                end
                 if call.target == "Client" or call.target == "Both" then prediction.client = prediction.client + 1 end
                 if call.target == "Server" or call.target == "Both" then prediction.server = prediction.server + 1 end
                 prediction.nodes[#prediction.nodes + 1] = call
@@ -929,6 +1252,9 @@ function M.genDebugKitPrediction()
 end
 
 function M.writeDebugKitPrediction(results)
+    if not results or not results.success then
+        return false, results and results.error or "无有效的生成结果"
+    end
     local outputPath = M.getDebugKitPredictionOutputPath()
     local f, err = io.open(outputPath, "w")
     if not f then return false, "无法写入文件: " .. tostring(err) end
@@ -936,8 +1262,15 @@ function M.writeDebugKitPrediction(results)
     local ids = {}; for id in pairs(results.predictions) do ids[#ids + 1] = id end; table.sort(ids)
     for _, id in ipairs(ids) do
         local p = results.predictions[id]
-        f:write(string.format("    [\"%s\"] = { name = \"%s\", client = %d, server = %d, nodes = {\n", commandEscape(id), commandEscape(p.name), p.client, p.server))
-        table.sort(p.nodes, function(a,b) return a.source .. ":" .. a.line < b.source .. ":" .. b.line end)
+        f:write(string.format(
+            "    [%d] = { id = %d, name = \"%s\", type = \"%s\", client = %d, server = %d, nodes = {\n",
+            id, p.id, commandEscape(p.name), commandEscape(p.type), p.client, p.server))
+        table.sort(p.nodes, function(a, b)
+            if a.target ~= b.target then return a.target < b.target end
+            if a.name ~= b.name then return a.name < b.name end
+            if a.source ~= b.source then return a.source < b.source end
+            return a.line < b.line
+        end)
         for _, n in ipairs(p.nodes) do f:write(string.format("        { name = \"%s\", target = \"%s\", source = \"%s\", line = %d },\n", commandEscape(n.name), commandEscape(n.target), commandEscape(n.source), n.line)) end
         f:write("        },\n    },\n")
     end
@@ -946,10 +1279,339 @@ end
 
 function M.runGenDebugKitPrediction()
     local results = M.genDebugKitPrediction()
+    if not results.success then return false, results.error end
     print("扫描文件数: " .. results.totalFiles .. "，识别调用数: " .. results.totalCalls)
     for id, p in pairs(results.predictions) do print(string.format("  %s: Client %d / Server %d", id, p.client, p.server)) end
     for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
     return M.writeDebugKitPrediction(results)
+end
+
+-- ============================================================
+-- 生成器: Core_Registry（扫描 Global_*.lua）
+-- ============================================================
+
+local function coreRegistryDirectoryExists(path)
+    local ok, _, code = os.rename(path, path)
+    return ok or code == 13
+end
+
+local function toCoreModuleInfo(filePath)
+    local relativePath = M.absPathToRelative(filePath)
+    if not relativePath then
+        return nil, "无法转换为 Script 相对路径"
+    end
+
+    local segments = {}
+    for segment in relativePath:gmatch("[^/\\]+") do
+        if not segment:match("^[%a_][%w_]*$") then
+            return nil, "路径片段不是合法 Lua 模块名: " .. segment
+        end
+        segments[#segments + 1] = segment
+    end
+    if #segments == 0 then
+        return nil, "模块路径为空"
+    end
+
+    local globalName = segments[#segments]
+    if not globalName:match("^Global_[%w_]+$") then
+        return nil, "文件名不符合 Global_*.lua: " .. globalName
+    end
+    return {
+        path = "Script." .. table.concat(segments, "."),
+        globalName = globalName,
+        source = "Script/" .. relativePath .. ".lua",
+    }
+end
+
+function M.genCoreRegistry()
+    local dir = M.getCoreScanDir()
+    local results = {
+        files = {},
+        modules = {},
+        warnings = {},
+        success = true,
+        error = nil,
+    }
+
+    if not coreRegistryDirectoryExists(dir) then
+        results.success = false
+        results.error = "Core 扫描目录不存在: " .. dir
+        return results
+    end
+
+    local files = M.scanLuaFiles(dir)
+    table.sort(files, function(a, b) return a:lower() < b:lower() end)
+
+    local seenPaths = {}
+    local seenNames = {}
+    for _, filePath in ipairs(files) do
+        local fileName = filePath:match("([^/\\]+)$") or ""
+        if fileName:match("^Global_[%w_]+%.lua$") then
+            results.files[#results.files + 1] = filePath
+            local info, err = toCoreModuleInfo(filePath)
+            if not info then
+                results.warnings[#results.warnings + 1] = filePath .. ": " .. err
+            else
+                local pathKey = info.path:lower()
+                local nameKey = info.globalName:lower()
+                if seenPaths[pathKey] then
+                    results.warnings[#results.warnings + 1] = "重复 Core 模块路径: " .. info.path
+                else
+                    seenPaths[pathKey] = true
+                    if seenNames[nameKey] then
+                        results.warnings[#results.warnings + 1] = string.format(
+                            "重复 Global 名称: %s (%s / %s)",
+                            info.globalName, seenNames[nameKey], info.path)
+                    else
+                        seenNames[nameKey] = info.path
+                    end
+                    results.modules[#results.modules + 1] = info
+                end
+            end
+        end
+    end
+
+    table.sort(results.modules, function(a, b) return a.path:lower() < b.path:lower() end)
+    return results
+end
+
+function M.previewCoreRegistry()
+    local results = M.genCoreRegistry()
+    print("扫描目录: " .. M.getCoreScanDir())
+    print("Global 文件数: " .. #results.files)
+    print("有效 Core 模块数: " .. #results.modules)
+    print("写入位置: " .. M.getCoreRegistryOutputPath())
+    if not results.success then
+        return false, results.error, results
+    end
+    for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    for _, info in ipairs(results.modules) do print("  " .. info.path) end
+    return true, nil, results
+end
+
+function M.writeCoreRegistry(results)
+    if not results or not results.success then
+        return false, results and results.error or "无有效的生成结果"
+    end
+
+    local outputPath = M.getCoreRegistryOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+
+    f:write("-- Core_Registry.lua\n")
+    f:write("-- 由 GenKit 自动生成，请勿手动编辑\n\n")
+    f:write("local Core_Registry = {\n")
+    for _, info in ipairs(results.modules) do
+        f:write(string.format("    \"%s\",\n", commandEscape(info.path)))
+    end
+    f:write("}\n\n")
+    f:write([[
+local initialized = false
+local beginPlaySucceeded = nil
+local tickEntries = {}
+
+local function Log(message)
+    if type(ugcprint) == "function" then
+        ugcprint(message)
+    elseif type(print) == "function" then
+        print(message)
+    end
+end
+
+local function ResolveModule(modulePath, loaded)
+    if type(loaded) == "table" then
+        return loaded
+    end
+    local globalName = modulePath:match("([^.]+)$")
+    local globalModule = _G and _G[globalName]
+    if type(globalModule) == "table" then
+        return globalModule
+    end
+    return nil
+end
+
+function Core_Registry.BeginPlay()
+    if initialized then
+        return beginPlaySucceeded
+    end
+
+    initialized = true
+    beginPlaySucceeded = true
+    tickEntries = {}
+
+    for _, modulePath in ipairs(Core_Registry) do
+        local requireOk, loaded = pcall(require, modulePath)
+        if not requireOk then
+            beginPlaySucceeded = false
+            Log("[Core_Registry] 模块加载失败: " .. modulePath .. " | " .. tostring(loaded))
+        else
+            local module = ResolveModule(modulePath, loaded)
+            if not module then
+                beginPlaySucceeded = false
+                Log("[Core_Registry] Global 模块未返回 table 且未写入 _G: " .. modulePath)
+            else
+                local moduleReady = true
+                if type(module.BeginPlay) == "function" then
+                    local beginOk, beginError = pcall(module.BeginPlay)
+                    if not beginOk then
+                        moduleReady = false
+                        beginPlaySucceeded = false
+                        Log("[Core_Registry] BeginPlay 失败: " .. modulePath
+                            .. " | " .. tostring(beginError))
+                    end
+                end
+                if moduleReady and type(module.Tick) == "function" then
+                    tickEntries[#tickEntries + 1] = {
+                        path = modulePath,
+                        module = module,
+                        disabled = false,
+                    }
+                end
+            end
+        end
+    end
+
+    return beginPlaySucceeded
+end
+
+function Core_Registry.Tick(deltaTime)
+    if not initialized then
+        return
+    end
+
+    for _, entry in ipairs(tickEntries) do
+        if not entry.disabled then
+            local tickOk, tickError = pcall(entry.module.Tick, deltaTime)
+            if not tickOk then
+                entry.disabled = true
+                Log("[Core_Registry] Tick 失败，已停用: " .. entry.path
+                    .. " | " .. tostring(tickError))
+            end
+        end
+    end
+end
+
+return Core_Registry
+]])
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
+end
+
+function M.runGenCoreRegistry()
+    local ok, err, results = M.previewCoreRegistry()
+    if not ok then return false, err end
+    io.write("确认写入? [Y/N]: ")
+    io.flush()
+    local confirm = (io.read() or ""):lower():gsub("^%s*(.-)%s*$", "%1")
+    if confirm ~= "y" and confirm ~= "yes" then return false, "用户取消" end
+    return M.writeCoreRegistry(results)
+end
+
+-- ============================================================
+-- 生成器: AutoTestSuiteIndex（静态扫描测试 Suite）
+-- ============================================================
+
+local function directoryExists(path)
+    local ok, _, code = os.rename(path, path)
+    return ok or code == 13
+end
+
+local function toSuiteModulePath(filePath)
+    local relativePath = M.absPathToRelative(filePath)
+    if not relativePath then
+        return nil, "无法转换为 Script 相对路径"
+    end
+
+    local segments = {}
+    for segment in relativePath:gmatch("[^/\\]+") do
+        if not segment:match("^[%a_][%w_]*$") then
+            return nil, "路径片段不是合法 Lua 模块名: " .. segment
+        end
+        segments[#segments + 1] = segment
+    end
+    if #segments == 0 then
+        return nil, "模块路径为空"
+    end
+    return "Script." .. table.concat(segments, ".")
+end
+
+function M.genAutoTestSuiteIndex()
+    local dir = M.getAutoTestSuiteDir()
+    local results = {
+        files = {},
+        modules = {},
+        warnings = {},
+        success = true,
+        error = nil,
+    }
+
+    if not directoryExists(dir) then
+        results.success = false
+        results.error = "AutoTestSuite 目录不存在: " .. dir
+        return results
+    end
+
+    local files = M.scanLuaFiles(dir)
+    table.sort(files, function(a, b) return a:lower() < b:lower() end)
+
+    local seen = {}
+    for _, filePath in ipairs(files) do
+        results.files[#results.files + 1] = filePath
+        local modulePath, err = toSuiteModulePath(filePath)
+        if not modulePath then
+            results.warnings[#results.warnings + 1] = filePath .. ": " .. err
+        else
+            local key = modulePath:lower()
+            if seen[key] then
+                results.warnings[#results.warnings + 1] = "重复 Suite 模块路径: " .. modulePath
+            else
+                seen[key] = true
+                results.modules[#results.modules + 1] = modulePath
+            end
+        end
+    end
+
+    table.sort(results.modules, function(a, b) return a:lower() < b:lower() end)
+    return results
+end
+
+function M.previewAutoTestSuiteIndex()
+    local results = M.genAutoTestSuiteIndex()
+    print("扫描目录: " .. M.getAutoTestSuiteDir())
+    print("Lua 文件数: " .. #results.files)
+    print("有效 Suite 模块数: " .. #results.modules)
+    print("写入位置: " .. M.getAutoTestSuiteIndexOutputPath())
+    if not results.success then
+        return false, results.error, results
+    end
+    for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    for _, modulePath in ipairs(results.modules) do print("  " .. modulePath) end
+    return true, nil, results
+end
+
+function M.writeAutoTestSuiteIndex(results)
+    if not results or not results.success then
+        return false, results and results.error or "无有效的生成结果"
+    end
+
+    local outputPath = M.getAutoTestSuiteIndexOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- AutoTestSuiteIndex.lua\n-- 由 GenKit 自动生成，请勿手动编辑\n\nreturn {\n")
+    for _, modulePath in ipairs(results.modules) do
+        f:write(string.format("    \"%s\",\n", commandEscape(modulePath)))
+    end
+    f:write("}\n")
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
+end
+
+function M.runGenAutoTestSuiteIndex()
+    local ok, err, results = M.previewAutoTestSuiteIndex()
+    if not ok then return false, err end
+    return M.writeAutoTestSuiteIndex(results)
 end
 
 -- ============================================================
@@ -976,16 +1638,28 @@ M.tools = {
         run = M.runGenPackageMetaIndex,
     },
     {
+        id = "gen_core_registry",
+        name = "生成 Core_Registry.lua",
+        description = "扫描 Core 下的 Global 模块，生成 BeginPlay 和 Tick 生命周期注册表",
+        run = M.runGenCoreRegistry,
+    },
+    {
         id = "gen_command_list",
-        name = "生成默认指令清单",
-        description = "扫描 CommandSystem 配置，生成默认解释器和 Both 端指令清单",
-        run = M.runGenCommandList,
+        name = "生成 CommandSystem 配置",
+        description = "扫描外置命令配置，同时生成运行时索引和可读指令清单",
+        run = M.runGenCommandSystemArtifacts,
     },
     {
         id = "gen_debugkit_prediction",
         name = "生成 DebugKit 预测配置",
         description = "扫描 DebugKit.Log 调用，生成按检测线和目标端统计的预测配置",
         run = M.runGenDebugKitPrediction,
+    },
+    {
+        id = "gen_autotest_suite_index",
+        name = "生成 AutoTestSuite 索引",
+        description = "扫描 AutoTestSuite 目录，生成 AutoTestKit 运行时 Suite 索引",
+        run = M.runGenAutoTestSuiteIndex,
     },
 }
 
