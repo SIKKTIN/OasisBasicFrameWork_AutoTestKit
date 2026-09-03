@@ -31,6 +31,34 @@ lua54 TestHelper\GenKit\Run_Console.lua
 
 ## 工具列表
 
+### 8. 生成 Const_Data.lua
+
+扫描 `Withdraw/Script/Package` 下所有 `Package_Meta.lua` 的 `playerData[].dataKey` 和 `gameData[].dataKey`，生成：
+
+```text
+Withdraw/Script/Const/Data/Const_Data.lua
+```
+
+字段名由 `dataKey` 转换为大写蛇形命名，输出分为 `PLAYER_DATA_TYPE` 和 `GAME_DATA_TYPE`。生成器只读取 Meta 源码，不加载依赖引擎全局对象的业务模块；重复类型会去重，字段冲突或无效 `dataKey` 会阻止写入。
+
+`condition_data` 和 `backitem_data` 是历史遗留类型，不属于 Package Meta 扫描范围。每次生成后需要手动确认并补入 `PLAYER_DATA_TYPE`；新增 Package 数据类型后应重新运行本工具。
+
+业务代码统一通过 `Script.Const.Data.Const_Data` 获取数据类型，不再使用 `Util_EnumManager.DATA_TYPE`。
+
+### 9. 生成 Event_DataChange.lua
+
+扫描所有 `Package_Meta.lua` 的 `playerData[].dataKey` 和 `gameData[].dataKey`，并纳入历史遗留的 `condition_data`、`backitem_data`，生成：
+
+```text
+Withdraw/Script/Event/Event_DataChange.lua
+```
+
+生成内容包括通用事件 `ON_PLAYER_DATA_CHANGE`、`ON_GAME_DATA_CHANGE`，以及按数据类型生成的分类事件。事件字段名由 `dataKey` 转换为大写蛇形命名，例如 `building_data` 对应 `ON_PLAYER_BUILDING_DATA_CHANGE`。
+
+所有事件 ID 固定从 `5000` 开始分配，且不能超出 `5000-5999`。生成结果按字段名稳定排序；重复类型会去重并警告，字段冲突或非法 `dataKey` 会阻止写入，失败时不会覆盖已有文件。
+
+该文件是纯静态配置，业务代码通过 `require("Script.Event.Event_DataChange")` 使用，不挂载全局变量。运行时数据变更由 `Global_PlayerDataCore` 或 `Global_GameDataCore` 统一派发。
+
 ### 1. 生成 Project_Globals.lua
 
 扫描 `Withdraw/Script` 目录下所有 `.lua` 文件，收集所有全局表定义，生成 `Project_Globals.lua`。

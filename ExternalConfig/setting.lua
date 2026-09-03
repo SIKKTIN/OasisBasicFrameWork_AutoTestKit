@@ -9,7 +9,7 @@
 
 return {
     -- 被测业务项目根目录
-    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\DayBreakDefenseDemoV1]],
+    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]],
 
     -- TestHelper 工具根目录
     testHelperRoot = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]],
@@ -40,6 +40,12 @@ return {
     -- AutoTestKit Suite 扫描目录和运行时索引输出路径（相对于 projectRoot）
     autoTestSuiteDir = [[Script\Config\AutoTestSuite]],
     autoTestSuiteIndexPath = [[Script\Setting\AutoTestSuiteIndex.lua]],
+
+    -- Const_Data.lua 输出路径（相对于 projectRoot）
+    constDataPath = [[Script\Const\Data\Const_Data.lua]],
+
+    -- 数据变更事件定义输出路径
+    eventDataChangePath = [[Script\Event\Event_DataChange.lua]],
 
     -- TestKit: 单元测试根目录（相对于 testHelperRoot）
     testDir = [[UnitTests]],

@@ -78,6 +78,14 @@ function M.getAutoTestSuiteIndexOutputPath()
     return M.PROJECT_ROOT .. [[\]] .. setting.autoTestSuiteIndexPath
 end
 
+function M.getConstDataOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.constDataPath
+end
+
+function M.getEventDataChangeOutputPath()
+    return M.PROJECT_ROOT .. [[\]] .. setting.eventDataChangePath
+end
+
 -- 向后兼容字段（外部脚本可能直接读取 M.SCRIPT_DIR）
 M.SCRIPT_DIR = M.PROJECT_ROOT .. [[\Script]]
 
@@ -1409,6 +1417,8 @@ function M.writeCoreRegistry(results)
 local initialized = false
 local beginPlaySucceeded = nil
 local tickEntries = {}
+local loadedModules = {}
+local loadSucceeded = true
 
 local function Log(message)
     if type(ugcprint) == "function" then
@@ -1430,43 +1440,51 @@ local function ResolveModule(modulePath, loaded)
     return nil
 end
 
+-- Global 模块在 Registry 被 require 时预加载；BeginPlay 只负责调用生命周期。
+for _, modulePath in ipairs(Core_Registry) do
+    local requireOk, loaded = pcall(require, modulePath)
+    if not requireOk then
+        loadSucceeded = false
+        Log("[Core_Registry] 模块加载失败: " .. modulePath .. " | " .. tostring(loaded))
+    else
+        local module = ResolveModule(modulePath, loaded)
+        if not module then
+            loadSucceeded = false
+            Log("[Core_Registry] Global 模块未返回 table 且未写入 _G: " .. modulePath)
+        else
+            loadedModules[modulePath] = module
+        end
+    end
+end
+
 function Core_Registry.BeginPlay()
     if initialized then
         return beginPlaySucceeded
     end
 
     initialized = true
-    beginPlaySucceeded = true
+    beginPlaySucceeded = loadSucceeded
     tickEntries = {}
 
     for _, modulePath in ipairs(Core_Registry) do
-        local requireOk, loaded = pcall(require, modulePath)
-        if not requireOk then
-            beginPlaySucceeded = false
-            Log("[Core_Registry] 模块加载失败: " .. modulePath .. " | " .. tostring(loaded))
-        else
-            local module = ResolveModule(modulePath, loaded)
-            if not module then
-                beginPlaySucceeded = false
-                Log("[Core_Registry] Global 模块未返回 table 且未写入 _G: " .. modulePath)
-            else
-                local moduleReady = true
-                if type(module.BeginPlay) == "function" then
-                    local beginOk, beginError = pcall(module.BeginPlay)
-                    if not beginOk then
-                        moduleReady = false
-                        beginPlaySucceeded = false
-                        Log("[Core_Registry] BeginPlay 失败: " .. modulePath
-                            .. " | " .. tostring(beginError))
-                    end
+        local module = loadedModules[modulePath]
+        if module then
+            local moduleReady = true
+            if type(module.BeginPlay) == "function" then
+                local beginOk, beginError = pcall(module.BeginPlay)
+                if not beginOk then
+                    moduleReady = false
+                    beginPlaySucceeded = false
+                    Log("[Core_Registry] BeginPlay 失败: " .. modulePath
+                        .. " | " .. tostring(beginError))
                 end
-                if moduleReady and type(module.Tick) == "function" then
-                    tickEntries[#tickEntries + 1] = {
-                        path = modulePath,
-                        module = module,
-                        disabled = false,
-                    }
-                end
+            end
+            if moduleReady and type(module.Tick) == "function" then
+                tickEntries[#tickEntries + 1] = {
+                    path = modulePath,
+                    module = module,
+                    disabled = false,
+                }
             end
         end
     end
@@ -1615,6 +1633,236 @@ function M.runGenAutoTestSuiteIndex()
 end
 
 -- ============================================================
+-- 生成器: Const_Data
+-- ============================================================
+
+local function DataTypeFieldName(dataKey)
+    return dataKey:gsub("[^%w]+", "_"):gsub("^%d", "_%0"):upper()
+end
+
+local function AddDataType(result, category, dataKey, sourcePath)
+    if type(dataKey) ~= "string" or dataKey == "" then
+        result.errors[#result.errors + 1] = sourcePath .. " 的 dataKey 为空"
+        return
+    end
+    local fieldName = DataTypeFieldName(dataKey)
+    local existing = result[category][fieldName]
+    if existing and existing ~= dataKey then
+        result.errors[#result.errors + 1] = string.format(
+            "%s 字段冲突: %s -> %s / %s", category, fieldName, existing, dataKey)
+        return
+    end
+    if existing then
+        result.warnings[#result.warnings + 1] =
+            "重复 dataKey，已去重: " .. category .. "." .. fieldName
+    else
+        result[category][fieldName] = dataKey
+    end
+end
+
+local function ScanMetaDataKeys(content, sourcePath, result)
+    local section = nil
+    for line in content:gmatch("[^\r\n]+") do
+        local topLevel = line:match("^%s%s%s%s([%a_][%w_]*)%s*=")
+        if topLevel == "playerData" or topLevel == "gameData" then
+            section = topLevel == "playerData" and "PLAYER_DATA_TYPE" or "GAME_DATA_TYPE"
+        elseif topLevel then
+            section = nil
+        end
+        if section then
+            local dataKey = line:match("dataKey%s*=%s*[\"']([^\"']+)[\"']")
+            if dataKey then AddDataType(result, section, dataKey, sourcePath) end
+        end
+    end
+end
+
+function M.genConstData()
+    local result = {
+        PLAYER_DATA_TYPE = {}, GAME_DATA_TYPE = {},
+        warnings = {}, errors = {}, files = {},
+    }
+    local packageDir = M.getScriptDir() .. [[\Package]]
+    for _, filePath in ipairs(M.scanLuaFiles(packageDir)) do
+        local relPath = M.absPathToRelative(filePath)
+        if relPath and relPath:match("^Package/[^/]+/Package_Meta$") then
+            local file = io.open(filePath, "r")
+            if not file then
+                result.errors[#result.errors + 1] = "无法读取 Meta: " .. filePath
+            else
+                local content = file:read("*all")
+                file:close()
+                result.files[#result.files + 1] = filePath
+                ScanMetaDataKeys(content, relPath, result)
+            end
+        end
+    end
+    return result
+end
+
+local function SortedKeys(map)
+    local keys = {}
+    for key in pairs(map) do keys[#keys + 1] = key end
+    table.sort(keys)
+    return keys
+end
+
+function M.previewConstData()
+    local result = M.genConstData()
+    print("扫描 Package Meta: " .. #result.files .. " 个")
+    for _, warning in ipairs(result.warnings) do print("[WARN] " .. warning) end
+    for _, err in ipairs(result.errors) do print("[ERROR] " .. err) end
+    print("PLAYER_DATA_TYPE: " .. #SortedKeys(result.PLAYER_DATA_TYPE))
+    print("GAME_DATA_TYPE: " .. #SortedKeys(result.GAME_DATA_TYPE))
+    return #result.errors == 0, result.errors[1], result
+end
+
+function M.writeConstData(result)
+    if not result or #result.errors > 0 then
+        return false, "Const_Data 扫描存在错误"
+    end
+    local outputPath = M.getConstDataOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- Const_Data.lua\n-- 由 GenKit 自动生成，请勿手动编辑。\n")
+    f:write("-- condition_data / backitem_data 是历史遗留数据类型，生成后需手动补回。\n\n")
+    f:write("local Const_Data = {}\n\nConst_Data.PLAYER_DATA_TYPE = {\n")
+    for _, key in ipairs(SortedKeys(result.PLAYER_DATA_TYPE)) do
+        f:write(string.format('    %s = "%s",\n', key, result.PLAYER_DATA_TYPE[key]))
+    end
+    f:write("}\n\n")
+    f:write("Const_Data.GAME_DATA_TYPE = {\n")
+    for _, key in ipairs(SortedKeys(result.GAME_DATA_TYPE)) do
+        f:write(string.format('    %s = "%s",\n', key, result.GAME_DATA_TYPE[key]))
+    end
+    f:write("}\n\nreturn Const_Data\n")
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
+end
+
+function M.runGenConstData()
+    local ok, err, result = M.previewConstData()
+    if not ok then return false, err end
+    return M.writeConstData(result)
+end
+
+-- ============================================================
+-- 生成 Event_DataChange
+-- ============================================================
+
+local function EventDataFieldName(dataKey)
+    return dataKey:gsub("[^%w]+", "_"):gsub("^%d", "_%0"):upper()
+end
+
+local function AddEventDataType(result, category, dataKey, sourcePath)
+    if type(dataKey) ~= "string" or dataKey == "" then
+        result.errors[#result.errors + 1] = sourcePath .. " 的 dataKey 为空"
+        return
+    end
+    if not dataKey:match("^[%a_][%w_]*$") then
+        result.errors[#result.errors + 1] = sourcePath .. " 的 dataKey 非法: " .. dataKey
+        return
+    end
+    local fieldName = EventDataFieldName(dataKey)
+    local existing = result[category][fieldName]
+    if existing and existing ~= dataKey then
+        result.errors[#result.errors + 1] = string.format(
+            "%s 事件字段冲突: %s -> %s / %s", category, fieldName, existing, dataKey)
+        return
+    end
+    if existing then
+        result.warnings[#result.warnings + 1] =
+            "重复 dataKey，事件已去重: " .. category .. "." .. fieldName
+    else
+        result[category][fieldName] = dataKey
+    end
+end
+
+function M.genEventDataChange()
+    local result = {
+        PLAYER_DATA_TYPE = {},
+        GAME_DATA_TYPE = {},
+        warnings = {},
+        errors = {},
+        files = {},
+    }
+    local packageDir = M.getScriptDir() .. [[\Package]]
+    for _, filePath in ipairs(M.scanLuaFiles(packageDir)) do
+        local relPath = M.absPathToRelative(filePath)
+        if relPath and relPath:match("^Package/[^/]+/Package_Meta$") then
+            local file = io.open(filePath, "r")
+            if not file then
+                result.errors[#result.errors + 1] = "无法读取 Meta: " .. filePath
+            else
+                local content = file:read("*all")
+                file:close()
+                result.files[#result.files + 1] = filePath
+                local section
+                for line in content:gmatch("[^\r\n]+") do
+                    local topLevel = line:match("^%s%s%s%s([%a_][%w_]*)%s*=")
+                    if topLevel == "playerData" or topLevel == "gameData" then
+                        section = topLevel == "playerData" and "PLAYER_DATA_TYPE" or "GAME_DATA_TYPE"
+                    elseif topLevel then
+                        section = nil
+                    end
+                    if section then
+                        local dataKey = line:match("dataKey%s*=%s*[\"']([^\"']+)[\"']")
+                        if dataKey then AddEventDataType(result, section, dataKey, relPath) end
+                    end
+                end
+            end
+        end
+    end
+    AddEventDataType(result, "PLAYER_DATA_TYPE", "condition_data", "历史遗留数据")
+    AddEventDataType(result, "PLAYER_DATA_TYPE", "backitem_data", "历史遗留数据")
+    return result
+end
+
+function M.previewEventDataChange()
+    local result = M.genEventDataChange()
+    print("扫描 Package Meta: " .. #result.files .. " 个")
+    for _, warning in ipairs(result.warnings) do print("[WARN] " .. warning) end
+    for _, err in ipairs(result.errors) do print("[ERROR] " .. err) end
+    print("PLAYER_DATA_TYPE 事件数: " .. #SortedKeys(result.PLAYER_DATA_TYPE))
+    print("GAME_DATA_TYPE 事件数: " .. #SortedKeys(result.GAME_DATA_TYPE))
+    return #result.errors == 0, result.errors[1], result
+end
+
+function M.writeEventDataChange(result)
+    if not result or #result.errors > 0 then
+        return false, "Event_DataChange 扫描存在错误"
+    end
+    local eventCount = 2 + #SortedKeys(result.PLAYER_DATA_TYPE) + #SortedKeys(result.GAME_DATA_TYPE)
+    if 5000 + eventCount > 6000 then
+        return false, "Event_DataChange 超出 5000-5999 ID 范围"
+    end
+    local outputPath = M.getEventDataChangeOutputPath()
+    local f, err = io.open(outputPath, "w")
+    if not f then return false, "无法写入文件: " .. tostring(err) end
+    f:write("-- Event_DataChange.lua\n-- 由 GenKit 自动生成，请勿手动编辑。\n\n")
+    f:write("local Event_DataChange = {}\n\n")
+    local id = 5000
+    f:write(string.format("Event_DataChange.ON_PLAYER_DATA_CHANGE = %d\n", id)); id = id + 1
+    f:write(string.format("Event_DataChange.ON_GAME_DATA_CHANGE = %d\n", id)); id = id + 1
+    for _, key in ipairs(SortedKeys(result.PLAYER_DATA_TYPE)) do
+        f:write(string.format("Event_DataChange.ON_PLAYER_%s_CHANGE = %d\n", key, id)); id = id + 1
+    end
+    for _, key in ipairs(SortedKeys(result.GAME_DATA_TYPE)) do
+        f:write(string.format("Event_DataChange.ON_GAME_%s_CHANGE = %d\n", key, id)); id = id + 1
+    end
+    f:write("\nreturn Event_DataChange\n")
+    f:close()
+    print("生成完成: " .. outputPath)
+    return true, nil
+end
+
+function M.runGenEventDataChange()
+    local ok, err, result = M.previewEventDataChange()
+    if not ok then return false, err end
+    return M.writeEventDataChange(result)
+end
+
+-- ============================================================
 -- 注册的工具函数
 -- ============================================================
 
@@ -1660,6 +1908,18 @@ M.tools = {
         name = "生成 AutoTestSuite 索引",
         description = "扫描 AutoTestSuite 目录，生成 AutoTestKit 运行时 Suite 索引",
         run = M.runGenAutoTestSuiteIndex,
+    },
+    {
+        id = "gen_const_data",
+        name = "生成 Const_Data.lua",
+        description = "扫描 Package Meta 的 playerData/gameData，生成数据类型常量",
+        run = M.runGenConstData,
+    },
+    {
+        id = "gen_event_data_change",
+        name = "生成 Event_DataChange.lua",
+        description = "扫描 Package Meta，生成 PlayerData/GameData 数据变更事件",
+        run = M.runGenEventDataChange,
     },
 }
 
