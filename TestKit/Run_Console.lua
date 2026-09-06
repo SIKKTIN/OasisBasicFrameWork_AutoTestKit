@@ -19,6 +19,7 @@ local TestKit = require("init")
 -- 注册所有包（按需添加）
 -- 不传 testDir 时,默认按 setting.testDir/<packageName> 拼接
 TestKit.RegisterPackage("CountDown")
+TestKit.RegisterPackage("GenKit")
 TestKit.RegisterPackage("Util")
 -- TestKit.RegisterPackage("BattlePass")
 -- TestKit.RegisterPackage("YourPackage")

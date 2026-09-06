@@ -9,7 +9,10 @@
 
 return {
     -- 被测业务项目根目录
-    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]],
+    projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\DayBreakDefenseDemoV1]],
+
+    -- UE 编辑器导出的自定义 DataTable CSV 公共根目录
+    dataTableCsvRoot = [[E:\Project\DemoExcel\DayBreakDefenseDemoV1\Asset\Data\Table\Customized]],
 
     -- TestHelper 工具根目录
     testHelperRoot = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]],

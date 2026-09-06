@@ -40,8 +40,27 @@ end
 -- 菜单
 -- ============================================================
 
-local function printMenu(tools)
+local function printModeMenu()
     header("GenKit 代码生成工具")
+    print("  项目: " .. GenKit.getProjectRoot())
+    print("")
+    print("  请选择使用模式:")
+    print("")
+    print("  [1] 预设模式")
+    print("      按常用场景组合生成多个文件")
+    print("")
+    print("  [2] 详细模式")
+    print("      单独选择要运行的生成器")
+    print("")
+    print("  [C] 清理控制台")
+    print("  [0] 退出")
+    print("")
+    io.write("  请输入: ")
+    io.flush()
+end
+
+local function printDetailMenu(tools)
+    header("详细模式")
     print("  项目: " .. GenKit.getProjectRoot())
     print("")
     print("  请选择要运行的生成器:")
@@ -54,7 +73,32 @@ local function printMenu(tools)
     end
 
     print("  [C] 清理控制台")
-    print("  [0] 退出")
+    print("  [0] 返回模式菜单")
+    print("")
+    io.write("  请输入: ")
+    io.flush()
+end
+
+local function printPresetMenu(presets)
+    header("预设模式")
+    print("  项目: " .. GenKit.getProjectRoot())
+    print("")
+
+    if #presets == 0 then
+        print("  当前暂无可用预设")
+        print("")
+    else
+        print("  请选择要运行的预设:")
+        print("")
+        for i, preset in ipairs(presets) do
+            print(string.format("  [%d] %s", i, preset.name))
+            print(string.format("      %s", preset.description))
+            print("")
+        end
+    end
+
+    print("  [C] 清理控制台")
+    print("  [0] 返回模式菜单")
     print("")
     io.write("  请输入: ")
     io.flush()
@@ -64,20 +108,18 @@ end
 -- 主循环
 -- ============================================================
 
-local function main()
-    os.execute("chcp 65001 >nul 2>&1")
+local function readChoice()
+    local choice = io.read()
+    return (choice or ""):gsub("^%s*(.-)%s*$", "%1")
+end
 
+local function runDetailMode()
     while true do
         local tools = GenKit.getTools()
-
-        printMenu(tools)
-
-        local choice = io.read()
-        choice = (choice or ""):gsub("^%s*(.-)%s*$", "%1")  -- trim
+        printDetailMenu(tools)
+        local choice = readChoice()
 
         if choice == "0" then
-            header("退出")
-            print("  再见!")
             break
         elseif choice == "c" or choice == "C" then
             os.execute("cls")
@@ -88,11 +130,14 @@ local function main()
                 header(tool.name)
                 print("")
 
-                local ok, result = pcall(tool.run)
+                local called, ok, err = pcall(tool.run)
 
-                if not ok then
+                if not called then
                     print("")
-                    print("[ERROR] 执行失败: " .. tostring(result))
+                    print("[ERROR] 执行失败: " .. tostring(ok))
+                elseif not ok then
+                    print("")
+                    print("[ERROR] 执行失败: " .. tostring(err))
                 end
 
                 waitEnter()
@@ -101,6 +146,66 @@ local function main()
                 print("  请输入有效的选项")
                 waitEnter()
             end
+        end
+    end
+end
+
+local function runPresetMode()
+    while true do
+        local presets = GenKit.getPresets()
+        printPresetMenu(presets)
+        local choice = readChoice()
+
+        if choice == "0" then
+            break
+        elseif choice == "c" or choice == "C" then
+            os.execute("cls")
+        else
+            local idx = tonumber(choice)
+            if idx and idx >= 1 and idx <= #presets then
+                local preset = presets[idx]
+                header(preset.name)
+                print("")
+
+                local called, ok, err = pcall(preset.run)
+                if not called then
+                    print("")
+                    print("[ERROR] 执行失败: " .. tostring(ok))
+                elseif not ok then
+                    print("")
+                    print("[ERROR] 执行失败: " .. tostring(err))
+                end
+                waitEnter()
+            else
+                header("无效选择")
+                print("  请输入有效的选项")
+                waitEnter()
+            end
+        end
+    end
+end
+
+local function main()
+    os.execute("chcp 65001 >nul 2>&1")
+
+    while true do
+        printModeMenu()
+        local choice = readChoice()
+
+        if choice == "0" then
+            header("退出")
+            print("  再见!")
+            break
+        elseif choice == "1" then
+            runPresetMode()
+        elseif choice == "2" then
+            runDetailMode()
+        elseif choice == "c" or choice == "C" then
+            os.execute("cls")
+        else
+            header("无效选择")
+            print("  请输入有效的选项")
+            waitEnter()
         end
     end
 end

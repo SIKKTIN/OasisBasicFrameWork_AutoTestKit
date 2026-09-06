@@ -11,6 +11,7 @@ local M = {}
 
 -- 引入项目级配置
 local setting = require("ExternalConfig.setting")
+local Csv = require("Csv")
 
 -- 先注册自身到 package.loaded，避免循环 require
 package.loaded["init"] = M
@@ -84,6 +85,10 @@ end
 
 function M.getEventDataChangeOutputPath()
     return M.PROJECT_ROOT .. [[\]] .. setting.eventDataChangePath
+end
+
+function M.getDataTableCsvRoot()
+    return setting.dataTableCsvRoot
 end
 
 -- 向后兼容字段（外部脚本可能直接读取 M.SCRIPT_DIR）
@@ -463,23 +468,10 @@ function M.previewPackageRegistry()
     return true, nil, results
 end
 
---- 确认写入 Package_Registry
-function M.writePackageRegistryConfirm(results)
+--- 写入 Package_Registry
+function M.writePackageRegistry(results)
     local outputPath = M.getPackageRegistryOutputPath()
 
-    print("")
-    print("  确认写入? [Y] 是  [N] 否: ", "")
-    io.flush()
-    local confirm = io.read()
-    confirm = (confirm or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
-
-    if confirm ~= "y" and confirm ~= "yes" then
-        print("")
-        print("  [取消] 操作已取消，未写入文件")
-        return false, "用户取消"
-    end
-
-    -- 写入
     print("")
     print("  正在写入文件...")
 
@@ -539,6 +531,18 @@ function M.writePackageRegistryConfirm(results)
     print("═══════════════════════════════════════════════════════════")
 
     return true, nil
+end
+
+--- 确认后写入 Package_Registry（详细模式兼容入口）
+function M.writePackageRegistryConfirm(results)
+    io.write("  确认写入? [Y] 是  [N] 否: ")
+    io.flush()
+    local confirm = (io.read() or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
+    if confirm ~= "y" and confirm ~= "yes" then
+        print("  [取消] 操作已取消，未写入文件")
+        return false, "用户取消"
+    end
+    return M.writePackageRegistry(results)
 end
 
 --- 完整运行（预览 + 确认）
@@ -631,23 +635,10 @@ function M.previewPackageMetaIndex()
     return true, nil, results
 end
 
---- 确认写入 Package_Meta_Index
-function M.writePackageMetaIndexConfirm(results)
+--- 写入 Package_Meta_Index
+function M.writePackageMetaIndex(results)
     local outputPath = M.getPackageMetaIndexOutputPath()
 
-    print("")
-    print("  确认写入? [Y] 是  [N] 否: ", "")
-    io.flush()
-    local confirm = io.read()
-    confirm = (confirm or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
-
-    if confirm ~= "y" and confirm ~= "yes" then
-        print("")
-        print("  [取消] 操作已取消，未写入文件")
-        return false, "用户取消"
-    end
-
-    -- 写入
     print("")
     print("  正在写入文件...")
 
@@ -718,6 +709,18 @@ function M.writePackageMetaIndexConfirm(results)
     print("═══════════════════════════════════════════════════════════")
 
     return true, nil
+end
+
+--- 确认后写入 Package_Meta_Index（详细模式兼容入口）
+function M.writePackageMetaIndexConfirm(results)
+    io.write("  确认写入? [Y] 是  [N] 否: ")
+    io.flush()
+    local confirm = (io.read() or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
+    if confirm ~= "y" and confirm ~= "yes" then
+        print("  [取消] 操作已取消，未写入文件")
+        return false, "用户取消"
+    end
+    return M.writePackageMetaIndex(results)
 end
 
 --- 完整运行（预览 + 确认）
@@ -913,7 +916,13 @@ function M.genCommandList()
             else
                 results.files[#results.files + 1] = filePath
                 for _, command in ipairs(config.commands) do
-                    local baseCommandText = string.format("cmd -s default -t both -%s -%s", config.namespace, command.action)
+                    local target = tostring(command.target or "Both"):lower()
+                    local baseCommandText = string.format(
+                        "cmd -s default -t %s -%s -%s",
+                        target,
+                        config.namespace,
+                        command.action
+                    )
                     local commandText = baseCommandText
                     for _, argExample in ipairs(command.argExamples) do
                         commandText = commandText .. " \"" .. commandEscape(argExample) .. "\""
@@ -997,20 +1006,30 @@ function M.runGenCommandList()
 end
 
 function M.runGenCommandSystemArtifacts()
+    local ok, err, results = M.previewCommandSystemArtifacts()
+    if not ok then return false, err end
+
+    io.write("确认同时写入命令配置索引和指令清单? [Y/N]: ")
+    io.flush()
+    local confirm = (io.read() or ""):lower():gsub("^%s*(.-)%s*$", "%1")
+    if confirm ~= "y" and confirm ~= "yes" then return false, "用户取消" end
+    return M.writeCommandSystemArtifacts(results)
+end
+
+function M.previewCommandSystemArtifacts()
     local indexOk, indexErr, indexResults = M.previewCommandConfigIndex()
     if not indexOk then return false, indexErr end
 
     local listOk, listErr, listResults = M.previewCommandList()
     if not listOk then return false, listErr end
 
-    io.write("确认同时写入命令配置索引和指令清单? [Y/N]: ")
-    io.flush()
-    local confirm = (io.read() or ""):lower():gsub("^%s*(.-)%s*$", "%1")
-    if confirm ~= "y" and confirm ~= "yes" then return false, "用户取消" end
+    return true, nil, { index = indexResults, list = listResults }
+end
 
-    local writeIndexOk, writeIndexErr = M.writeCommandConfigIndex(indexResults)
+function M.writeCommandSystemArtifacts(results)
+    local writeIndexOk, writeIndexErr = M.writeCommandConfigIndex(results.index)
     if not writeIndexOk then return false, writeIndexErr end
-    return M.writeCommandList(listResults)
+    return M.writeCommandList(results.list)
 end
 
 -- ============================================================
@@ -1285,12 +1304,19 @@ function M.writeDebugKitPrediction(results)
     f:write("}\n"); f:close(); print("生成完成: " .. outputPath); return true, nil
 end
 
-function M.runGenDebugKitPrediction()
+function M.previewDebugKitPrediction()
     local results = M.genDebugKitPrediction()
     if not results.success then return false, results.error end
     print("扫描文件数: " .. results.totalFiles .. "，识别调用数: " .. results.totalCalls)
     for id, p in pairs(results.predictions) do print(string.format("  %s: Client %d / Server %d", id, p.client, p.server)) end
     for _, warning in ipairs(results.warnings) do print("[WARN] " .. warning) end
+    print("写入位置: " .. M.getDebugKitPredictionOutputPath())
+    return true, nil, results
+end
+
+function M.runGenDebugKitPrediction()
+    local ok, err, results = M.previewDebugKitPrediction()
+    if not ok then return false, err end
     return M.writeDebugKitPrediction(results)
 end
 
@@ -1636,6 +1662,74 @@ end
 -- 生成器: Const_Data
 -- ============================================================
 
+local DEFAULT_ADDITIONAL_PLAYER_DATA_KEYS = {
+    "condition_data",
+    "backitem_data",
+}
+
+function M.getProjectGenKitConfigPath()
+    return M.PROJECT_ROOT .. [[\Script\Setting\GenKit_Config.lua]]
+end
+
+local function CopyArray(values)
+    local result = {}
+    for index, value in ipairs(values) do result[index] = value end
+    return result
+end
+
+--- 读取项目级数据生成配置。
+--- 配置缺失或未声明字段时，沿用 Withdraw 历史默认值。
+local function LoadAdditionalPlayerDataKeys()
+    local configPath = M.getProjectGenKitConfigPath()
+    local file = io.open(configPath, "r")
+    if not file then
+        return CopyArray(DEFAULT_ADDITIONAL_PLAYER_DATA_KEYS), nil,
+            "默认历史配置"
+    end
+    file:close()
+
+    local chunk, loadError = loadfile(configPath, "t", {})
+    if not chunk then
+        return nil, "无法加载 GenKit_Config: " .. tostring(loadError)
+    end
+    local runOk, config = pcall(chunk)
+    if not runOk then
+        return nil, "执行 GenKit_Config 失败: " .. tostring(config)
+    end
+    if type(config) ~= "table" then
+        return nil, "GenKit_Config 必须返回 table"
+    end
+
+    local values = config.additionalPlayerDataKeys
+    if values == nil then
+        return CopyArray(DEFAULT_ADDITIONAL_PLAYER_DATA_KEYS), nil,
+            "GenKit_Config 默认历史配置"
+    end
+    if type(values) ~= "table" then
+        return nil, "additionalPlayerDataKeys 必须是数组"
+    end
+
+    local maxIndex = 0
+    for index, value in pairs(values) do
+        if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
+            return nil, "additionalPlayerDataKeys 必须是连续数组"
+        end
+        if type(value) ~= "string" or value == "" then
+            return nil, "additionalPlayerDataKeys 只能包含非空字符串"
+        end
+        if not value:match("^[%a_][%w_]*$") then
+            return nil, "additionalPlayerDataKeys 包含非法 dataKey: " .. value
+        end
+        if index > maxIndex then maxIndex = index end
+    end
+    for index = 1, maxIndex do
+        if values[index] == nil then
+            return nil, "additionalPlayerDataKeys 必须是连续数组"
+        end
+    end
+    return CopyArray(values), nil, "GenKit_Config"
+end
+
 local function DataTypeFieldName(dataKey)
     return dataKey:gsub("[^%w]+", "_"):gsub("^%d", "_%0"):upper()
 end
@@ -1696,6 +1790,20 @@ function M.genConstData()
             end
         end
     end
+    local additionalKeys, configError, configSource =
+        LoadAdditionalPlayerDataKeys()
+    if not additionalKeys then
+        result.errors[#result.errors + 1] = configError
+    else
+        for _, dataKey in ipairs(additionalKeys) do
+            AddDataType(
+                result,
+                "PLAYER_DATA_TYPE",
+                dataKey,
+                configSource
+            )
+        end
+    end
     return result
 end
 
@@ -1723,8 +1831,7 @@ function M.writeConstData(result)
     local outputPath = M.getConstDataOutputPath()
     local f, err = io.open(outputPath, "w")
     if not f then return false, "无法写入文件: " .. tostring(err) end
-    f:write("-- Const_Data.lua\n-- 由 GenKit 自动生成，请勿手动编辑。\n")
-    f:write("-- condition_data / backitem_data 是历史遗留数据类型，生成后需手动补回。\n\n")
+    f:write("-- Const_Data.lua\n-- 由 GenKit 自动生成，请勿手动编辑。\n\n")
     f:write("local Const_Data = {}\n\nConst_Data.PLAYER_DATA_TYPE = {\n")
     for _, key in ipairs(SortedKeys(result.PLAYER_DATA_TYPE)) do
         f:write(string.format('    %s = "%s",\n', key, result.PLAYER_DATA_TYPE[key]))
@@ -1813,8 +1920,20 @@ function M.genEventDataChange()
             end
         end
     end
-    AddEventDataType(result, "PLAYER_DATA_TYPE", "condition_data", "历史遗留数据")
-    AddEventDataType(result, "PLAYER_DATA_TYPE", "backitem_data", "历史遗留数据")
+    local additionalKeys, configError, configSource =
+        LoadAdditionalPlayerDataKeys()
+    if not additionalKeys then
+        result.errors[#result.errors + 1] = configError
+    else
+        for _, dataKey in ipairs(additionalKeys) do
+            AddEventDataType(
+                result,
+                "PLAYER_DATA_TYPE",
+                dataKey,
+                configSource
+            )
+        end
+    end
     return result
 end
 
@@ -1860,6 +1979,392 @@ function M.runGenEventDataChange()
     local ok, err, result = M.previewEventDataChange()
     if not ok then return false, err end
     return M.writeEventDataChange(result)
+end
+
+-- ============================================================
+-- 生成器: DataTable 常量
+-- ============================================================
+
+local function Trim(value)
+    return tostring(value or ""):gsub("^%s*(.-)%s*$", "%1")
+end
+
+local function LoadProjectGenKitConfig()
+    local configPath = M.getProjectGenKitConfigPath()
+    local file = io.open(configPath, "r")
+    if not file then
+        return nil, "项目缺少 GenKit_Config: " .. configPath
+    end
+    file:close()
+
+    local chunk, loadError = loadfile(configPath, "t", {})
+    if not chunk then
+        return nil, "无法加载 GenKit_Config: " .. tostring(loadError)
+    end
+    local runOk, config = pcall(chunk)
+    if not runOk then
+        return nil, "执行 GenKit_Config 失败: " .. tostring(config)
+    end
+    if type(config) ~= "table" then
+        return nil, "GenKit_Config 必须返回 table"
+    end
+    return config, nil
+end
+
+local function IsRelativeSafePath(path)
+    if type(path) ~= "string" or path == "" then return false end
+    if path:match("^[A-Za-z]:") or path:match("^[/\\]") then return false end
+    for part in path:gmatch("[^/\\]+") do
+        if part == ".." or part == "." then return false end
+    end
+    return not path:find('"', 1, true)
+end
+
+local function JoinPath(root, relativePath)
+    return root:gsub("[/\\]+$", "") .. "\\"
+        .. relativePath:gsub("/", "\\")
+end
+
+local function IsAbsoluteWindowsPath(path)
+    return type(path) == "string" and path:match("^[A-Za-z]:[/\\]") ~= nil
+end
+
+local function ReadFile(path)
+    local file = io.open(path, "rb")
+    if not file then return nil end
+    local content = file:read("*all")
+    file:close()
+    return content
+end
+
+local function BuildHeaderIndex(header, errors, sourcePath)
+    local indexes = {}
+    for index, rawName in ipairs(header or {}) do
+        local name = Trim(rawName)
+        if name == "" then
+            errors[#errors + 1] = string.format(
+                "%s 第 %d 列表头为空", sourcePath, index)
+        elseif indexes[name] then
+            errors[#errors + 1] = string.format(
+                "%s 表头重复: %s", sourcePath, name)
+        else
+            indexes[name] = index
+        end
+    end
+    return indexes
+end
+
+local function NormalizeConstName(rawName)
+    local constName = Trim(rawName):upper()
+    if not constName:match("^[A-Z_][A-Z0-9_]*$") then return nil end
+    return constName
+end
+
+local function IsBlankCsvRow(row)
+    for _, value in ipairs(row or {}) do
+        if Trim(value) ~= "" then return false end
+    end
+    return true
+end
+
+local function ValidateTableConstSpec(spec, index)
+    if type(spec) ~= "table" then
+        return nil, "tableConsts[" .. index .. "] 必须是 table"
+    end
+    if type(spec.name) ~= "string"
+        or not spec.name:match("^[A-Z][A-Za-z0-9_]*$") then
+        return nil, "tableConsts[" .. index .. "].name 必须是合法的大驼峰标识符"
+    end
+    if not IsRelativeSafePath(spec.source) then
+        return nil, "tableConsts[" .. index .. "].source 必须是根目录内的安全相对路径"
+    end
+
+    local normalized = {
+        name = spec.name,
+        source = spec.source:gsub("\\", "/"),
+        keyColumn = spec.keyColumn or "---",
+        nameColumn = spec.nameColumn or "ConstName",
+        enumType = spec.enumType or (spec.name .. "ID"),
+        output = spec.output
+            or ("Script/Const/Generate/Const_" .. spec.name .. ".lua"),
+    }
+    if not normalized.enumType:match("^[A-Za-z_][A-Za-z0-9_]*$") then
+        return nil, "tableConsts[" .. index .. "].enumType 不是合法标识符"
+    end
+    if type(normalized.keyColumn) ~= "string" or normalized.keyColumn == ""
+        or type(normalized.nameColumn) ~= "string" or normalized.nameColumn == "" then
+        return nil, "tableConsts[" .. index .. "] 的列名必须是非空字符串"
+    end
+    if not IsRelativeSafePath(normalized.output)
+        or not normalized.output:match("%.lua$") then
+        return nil, "tableConsts[" .. index .. "].output 必须是项目内 Lua 相对路径"
+    end
+    normalized.output = normalized.output:gsub("\\", "/")
+    return normalized, nil
+end
+
+local function RenderTableConst(spec, entries)
+    local moduleName = "Const_" .. spec.name
+    local lines = {
+        "-- " .. moduleName .. ".lua",
+        "-- 由 GenKit 根据 " .. spec.source .. " 自动生成，请勿手动编辑。",
+        "",
+        "---@enum " .. spec.enumType,
+        "local " .. moduleName .. " = {",
+    }
+    for _, entry in ipairs(entries) do
+        lines[#lines + 1] = string.format(
+            "    %s = %d,", entry.name, entry.id)
+    end
+    lines[#lines + 1] = "}"
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "return " .. moduleName
+    lines[#lines + 1] = ""
+    return table.concat(lines, "\n")
+end
+
+function M.buildTableConstArtifact(spec, rows, sourcePath, outputPath)
+    local artifact = {
+        spec = spec,
+        sourcePath = sourcePath,
+        outputPath = outputPath,
+        entries = {},
+        errors = {},
+        warnings = {},
+    }
+    if type(rows) ~= "table" or #rows == 0 then
+        artifact.errors[#artifact.errors + 1] = sourcePath .. " 没有表头"
+        return artifact
+    end
+
+    local indexes = BuildHeaderIndex(rows[1], artifact.errors, sourcePath)
+    local keyIndex = indexes[spec.keyColumn]
+    local nameIndex = indexes[spec.nameColumn]
+    if not keyIndex then
+        artifact.errors[#artifact.errors + 1] =
+            sourcePath .. " 缺少 ID 列: " .. spec.keyColumn
+    end
+    if not nameIndex then
+        artifact.errors[#artifact.errors + 1] =
+            sourcePath .. " 缺少常量名列: " .. spec.nameColumn
+    end
+    if not keyIndex or not nameIndex then return artifact end
+
+    local names = {}
+    local ids = {}
+    for rowIndex = 2, #rows do
+        local row = rows[rowIndex]
+        if not IsBlankCsvRow(row) then
+            local idText = Trim(row[keyIndex])
+            local numericID = tonumber(idText)
+            local itemID = numericID and math.tointeger(numericID) or nil
+            local constName = NormalizeConstName(row[nameIndex])
+            if not itemID or itemID <= 0 then
+                artifact.errors[#artifact.errors + 1] = string.format(
+                    "%s 第 %d 行 ID 必须是正整数: %s",
+                    sourcePath, rowIndex, idText)
+            end
+            if not constName then
+                artifact.errors[#artifact.errors + 1] = string.format(
+                    "%s 第 %d 行 %s 必须符合 [A-Za-z_][A-Za-z0-9_]*: %s",
+                    sourcePath, rowIndex, spec.nameColumn,
+                    Trim(row[nameIndex]))
+            end
+            if itemID and itemID > 0 and ids[itemID] then
+                artifact.errors[#artifact.errors + 1] = string.format(
+                    "%s 第 %d 行 ID 重复: %d（首次位于第 %d 行）",
+                    sourcePath, rowIndex, itemID, ids[itemID])
+            end
+            if constName and names[constName] then
+                artifact.errors[#artifact.errors + 1] = string.format(
+                    "%s 第 %d 行常量名重复: %s（首次位于第 %d 行）",
+                    sourcePath, rowIndex, constName, names[constName])
+            end
+            if itemID and itemID > 0 and constName
+                and not ids[itemID] and not names[constName] then
+                ids[itemID] = rowIndex
+                names[constName] = rowIndex
+                artifact.entries[#artifact.entries + 1] = {
+                    id = itemID,
+                    name = constName,
+                }
+            end
+        end
+    end
+    table.sort(artifact.entries, function(left, right)
+        return left.name < right.name
+    end)
+    if #artifact.entries == 0 and #artifact.errors == 0 then
+        artifact.warnings[#artifact.warnings + 1] = sourcePath .. " 没有数据行"
+    end
+    if #artifact.errors == 0 then
+        artifact.content = RenderTableConst(spec, artifact.entries)
+    end
+    return artifact
+end
+
+function M.genTableConsts()
+    local result = { artifacts = {}, errors = {}, warnings = {} }
+    local root = M.getDataTableCsvRoot()
+    if not IsAbsoluteWindowsPath(root) then
+        result.errors[#result.errors + 1] =
+            "ExternalConfig.setting.dataTableCsvRoot 必须是 Windows 绝对路径"
+        return result
+    end
+
+    local config, configError = LoadProjectGenKitConfig()
+    if not config then
+        result.errors[#result.errors + 1] = configError
+        return result
+    end
+    local specs = config.tableConsts
+    if type(specs) ~= "table" then
+        result.errors[#result.errors + 1] =
+            "GenKit_Config.tableConsts 必须是连续数组"
+        return result
+    end
+
+    local maxIndex = 0
+    for index in pairs(specs) do
+        if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
+            result.errors[#result.errors + 1] =
+                "GenKit_Config.tableConsts 必须是连续数组"
+            return result
+        end
+        if index > maxIndex then maxIndex = index end
+    end
+    if maxIndex == 0 then
+        result.warnings[#result.warnings + 1] = "未配置 tableConsts"
+        return result
+    end
+
+    local outputPaths = {}
+    for index = 1, maxIndex do
+        local spec, specError = ValidateTableConstSpec(specs[index], index)
+        if not spec then
+            result.errors[#result.errors + 1] = specError
+        else
+            local sourcePath = JoinPath(root, spec.source)
+            local outputPath = JoinPath(M.PROJECT_ROOT, spec.output)
+            local normalizedOutput = outputPath:lower()
+            if outputPaths[normalizedOutput] then
+                result.errors[#result.errors + 1] =
+                    "常量输出路径重复: " .. spec.output
+            else
+                outputPaths[normalizedOutput] = true
+                local rows, csvError = Csv.Read(sourcePath)
+                if not rows then
+                    result.errors[#result.errors + 1] =
+                        sourcePath .. " | " .. tostring(csvError)
+                else
+                    local artifact = M.buildTableConstArtifact(
+                        spec, rows, sourcePath, outputPath)
+                    result.artifacts[#result.artifacts + 1] = artifact
+                    for _, err in ipairs(artifact.errors) do
+                        result.errors[#result.errors + 1] = err
+                    end
+                    for _, warning in ipairs(artifact.warnings) do
+                        result.warnings[#result.warnings + 1] = warning
+                    end
+                end
+            end
+        end
+    end
+    return result
+end
+
+function M.previewTableConsts()
+    local result = M.genTableConsts()
+    print("CSV 根目录: " .. tostring(M.getDataTableCsvRoot()))
+    for _, artifact in ipairs(result.artifacts) do
+        print(string.format(
+            "%s: %d 项 -> %s",
+            artifact.spec.name, #artifact.entries, artifact.outputPath))
+        for _, entry in ipairs(artifact.entries) do
+            print(string.format("  %s = %d", entry.name, entry.id))
+        end
+    end
+    for _, warning in ipairs(result.warnings) do print("[WARN] " .. warning) end
+    for _, err in ipairs(result.errors) do print("[ERROR] " .. err) end
+    return #result.errors == 0, result.errors[1], result
+end
+
+local function EnsureParentDirectory(filePath)
+    local parent = filePath:match("^(.*)[/\\][^/\\]+$")
+    if not parent then return false, "无法解析输出目录: " .. filePath end
+    local ok, _, code = os.execute(
+        'if not exist "' .. parent .. '" mkdir "' .. parent .. '"')
+    if ok == true or ok == 0 or code == 0 then return true, nil end
+    return false, "无法创建输出目录: " .. parent
+end
+
+local function RollbackArtifacts(changed)
+    for _, artifact in ipairs(changed) do
+        if artifact.promoted then os.remove(artifact.outputPath) end
+        if artifact.backedUp then
+            os.rename(artifact.backupPath, artifact.outputPath)
+        end
+        os.remove(artifact.tempPath)
+    end
+end
+
+function M.writeTableConsts(result)
+    if not result or #result.errors > 0 then
+        return false, "DataTable 常量扫描存在错误"
+    end
+
+    local changed = {}
+    for _, artifact in ipairs(result.artifacts) do
+        if ReadFile(artifact.outputPath) ~= artifact.content then
+            local dirOK, dirError = EnsureParentDirectory(artifact.outputPath)
+            if not dirOK then return false, dirError end
+            artifact.tempPath = artifact.outputPath .. ".genkit.tmp"
+            artifact.backupPath = artifact.outputPath .. ".genkit.bak"
+            os.remove(artifact.tempPath)
+            os.remove(artifact.backupPath)
+            local file, openError = io.open(artifact.tempPath, "wb")
+            if not file then
+                RollbackArtifacts(changed)
+                return false, "无法写入临时文件: " .. tostring(openError)
+            end
+            file:write(artifact.content)
+            file:close()
+            changed[#changed + 1] = artifact
+        end
+    end
+
+    for _, artifact in ipairs(changed) do
+        if ReadFile(artifact.outputPath) ~= nil then
+            local backedUp, backupError = os.rename(
+                artifact.outputPath, artifact.backupPath)
+            if not backedUp then
+                RollbackArtifacts(changed)
+                return false, "无法备份已有文件: " .. tostring(backupError)
+            end
+            artifact.backedUp = true
+        end
+    end
+    for _, artifact in ipairs(changed) do
+        local promoted, promoteError = os.rename(
+            artifact.tempPath, artifact.outputPath)
+        if not promoted then
+            RollbackArtifacts(changed)
+            return false, "无法替换生成文件: " .. tostring(promoteError)
+        end
+        artifact.promoted = true
+    end
+    for _, artifact in ipairs(changed) do
+        if artifact.backedUp then os.remove(artifact.backupPath) end
+        print("生成完成: " .. artifact.outputPath)
+    end
+    if #changed == 0 then print("生成结果无变化") end
+    return true, nil
+end
+
+function M.runGenTableConsts()
+    local ok, err, result = M.previewTableConsts()
+    if not ok then return false, err end
+    return M.writeTableConsts(result)
 end
 
 -- ============================================================
@@ -1921,7 +2426,99 @@ M.tools = {
         description = "扫描 Package Meta，生成 PlayerData/GameData 数据变更事件",
         run = M.runGenEventDataChange,
     },
+    {
+        id = "gen_table_consts",
+        name = "生成 DataTable 常量",
+        description = "读取已登记的 DataTable CSV，生成 Const/Generate 下的领域常量",
+        run = M.runGenTableConsts,
+    },
 }
+
+-- 预设模式的组合执行。预设先完成全部扫描，确认一次后再写入。
+function M.runPreset(preset)
+    local results = {}
+    print("")
+    print("  正在扫描预设中的全部生成器...")
+
+    for _, step in ipairs(preset.steps) do
+        print("")
+        print("  [扫描] " .. step.name)
+        local ok, err, result = step.preview()
+        if not ok then
+            print("  [ERROR] " .. step.name .. ": " .. tostring(err))
+            return false, err
+        end
+        results[#results + 1] = { step = step, result = result }
+    end
+
+    print("")
+    print("  预设扫描完成，共 " .. #results .. " 项生成操作")
+    io.write("  确认写入以上全部结果? [Y/N]: ")
+    io.flush()
+    local confirm = (io.read() or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
+    if confirm ~= "y" and confirm ~= "yes" then
+        print("  [取消] 操作已取消，未写入文件")
+        return false, "用户取消"
+    end
+
+    print("")
+    print("  开始写入预设结果...")
+    for _, item in ipairs(results) do
+        local ok, err = item.step.write(item.result)
+        if not ok then
+            print("  [ERROR] " .. item.step.name .. ": " .. tostring(err))
+            return false, err
+        end
+    end
+    print("  预设生成完成")
+    return true, nil
+end
+
+M.presets = {
+    {
+        id = "data_definitions_and_events",
+        name = "数据定义与变更事件",
+        description = "生成 Const_Data.lua 和 Event_DataChange.lua",
+        steps = {
+            { id = "gen_const_data", name = "生成 Const_Data.lua", preview = M.previewConstData, write = M.writeConstData },
+            { id = "gen_event_data_change", name = "生成 Event_DataChange.lua", preview = M.previewEventDataChange, write = M.writeEventDataChange },
+        },
+    },
+    {
+        id = "debug_and_runtime_config",
+        name = "调试与运行配置",
+        description = "生成 CommandSystem、DebugKit 和 AutoTestSuite 配置",
+        steps = {
+            { id = "gen_command_system_artifacts", name = "生成 CommandSystem 配置", preview = M.previewCommandSystemArtifacts, write = M.writeCommandSystemArtifacts },
+            { id = "gen_debugkit_prediction", name = "生成 DebugKit 预测配置", preview = M.previewDebugKitPrediction, write = M.writeDebugKitPrediction },
+            { id = "gen_autotest_suite_index", name = "生成 AutoTestSuite 索引", preview = M.previewAutoTestSuiteIndex, write = M.writeAutoTestSuiteIndex },
+        },
+    },
+    {
+        id = "package_and_core_config",
+        name = "包与核心配置",
+        description = "生成 Package Registry、Meta 索引和 Core Registry",
+        steps = {
+            { id = "gen_package_registry", name = "生成 Package_Registry.lua", preview = M.previewPackageRegistry, write = M.writePackageRegistry },
+            { id = "gen_package_meta_index", name = "生成 Package_Meta_Index.lua", preview = M.previewPackageMetaIndex, write = M.writePackageMetaIndex },
+            { id = "gen_core_registry", name = "生成 Core_Registry.lua", preview = M.previewCoreRegistry, write = M.writeCoreRegistry },
+        },
+    },
+    {
+        id = "table_consts",
+        name = "表常量",
+        description = "读取项目登记的 DataTable CSV，生成全部领域常量",
+        steps = {
+            { id = "gen_table_consts", name = "生成 DataTable 常量", preview = M.previewTableConsts, write = M.writeTableConsts },
+        },
+    },
+}
+
+for _, preset in ipairs(M.presets) do
+    preset.run = function()
+        return M.runPreset(preset)
+    end
+end
 
 function M.getTools()
     return M.tools
@@ -1931,6 +2528,19 @@ function M.getToolById(id)
     for _, tool in ipairs(M.tools) do
         if tool.id == id then
             return tool
+        end
+    end
+    return nil
+end
+
+function M.getPresets()
+    return M.presets
+end
+
+function M.getPresetById(id)
+    for _, preset in ipairs(M.presets) do
+        if preset.id == id then
+            return preset
         end
     end
     return nil

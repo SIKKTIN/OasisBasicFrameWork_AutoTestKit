@@ -29,7 +29,18 @@ cd E:\Project\AgentHelper\WithDrawCache
 lua54 TestHelper\GenKit\Run_Console.lua
 ```
 
-## 工具列表
+## 使用模式
+
+启动后先选择使用模式：
+
+- **预设模式**：按常用场景组合运行多个生成器。所有生成器扫描成功后只需确认一次写入：
+  - `数据定义与变更事件`：生成 `Const_Data.lua`、`Event_DataChange.lua`。
+  - `调试与运行配置`：生成 CommandSystem 索引与指令清单、DebugKit 预测配置、AutoTestSuite 索引。
+  - `包与核心配置`：生成 `Package_Registry.lua`、`Package_Meta_Index.lua`、`Core_Registry.lua`。
+  - `表常量`：读取项目登记的 DataTable CSV，生成 `Script/Const/Generate/Const_*.lua`。
+- **详细模式**：逐项选择生成器，保留以下 10 个独立生成操作，适合需要精确控制生成范围的场景。
+
+## 工具列表（详细模式）
 
 ### 8. 生成 Const_Data.lua
 
@@ -41,13 +52,13 @@ Withdraw/Script/Const/Data/Const_Data.lua
 
 字段名由 `dataKey` 转换为大写蛇形命名，输出分为 `PLAYER_DATA_TYPE` 和 `GAME_DATA_TYPE`。生成器只读取 Meta 源码，不加载依赖引擎全局对象的业务模块；重复类型会去重，字段冲突或无效 `dataKey` 会阻止写入。
 
-`condition_data` 和 `backitem_data` 是历史遗留类型，不属于 Package Meta 扫描范围。每次生成后需要手动确认并补入 `PLAYER_DATA_TYPE`；新增 Package 数据类型后应重新运行本工具。
+生成器还会读取目标项目的可选配置 `Script/Setting/GenKit_Config.lua`，将 `additionalPlayerDataKeys` 注入 `PLAYER_DATA_TYPE`。项目没有该配置或未声明该字段时，默认补入 Withdraw 的历史 `condition_data`、`backitem_data`；显式配置空数组可关闭补入。
 
 业务代码统一通过 `Script.Const.Data.Const_Data` 获取数据类型，不再使用 `Util_EnumManager.DATA_TYPE`。
 
 ### 9. 生成 Event_DataChange.lua
 
-扫描所有 `Package_Meta.lua` 的 `playerData[].dataKey` 和 `gameData[].dataKey`，并纳入历史遗留的 `condition_data`、`backitem_data`，生成：
+扫描所有 `Package_Meta.lua` 的 `playerData[].dataKey` 和 `gameData[].dataKey`，并纳入项目配置的 `additionalPlayerDataKeys`，生成：
 
 ```text
 Withdraw/Script/Event/Event_DataChange.lua
@@ -185,6 +196,34 @@ Core_Registry.Tick(deltaTime)
 
 新增、移动或删除 Global Core 后，重新运行“生成 Core_Registry.lua”。
 
+### 10. 生成 DataTable 常量
+
+本机 CSV 公共根目录配置在 `ExternalConfig/setting.lua`：
+
+```lua
+dataTableCsvRoot = [[E:\Project\DemoExcel\DayBreakDefenseDemoV1\Asset\Data\Table\Customized]],
+```
+
+目标项目的 `Script/Setting/GenKit_Config.lua` 只登记相对路径：
+
+```lua
+tableConsts = {
+    {
+        name = "Item",
+        source = "Item/DT_Item_Config.csv",
+        enumType = "ItemID",
+    },
+}
+```
+
+默认读取 `---` 作为数值 ID 列、`ConstName` 作为常量名列，并输出到
+`Script/Const/Generate/Const_<Name>.lua`。不同字段结构可以通过
+`keyColumn`、`nameColumn` 和 `output` 覆盖。生成器会统一校验路径、列、
+正整数 ID、常量名和重复项；全部表扫描成功后才允许写入。
+
+生成文件带有 EmmyLua `---@enum` 标注，可供 Lua 编辑器补全和类型检查。
+生成结果应提交版本库，但不得手工编辑。
+
 ## 扩展新工具
 
 在 `GenKit/init.lua` 中添加新的生成器：
@@ -206,7 +245,21 @@ M.tools = {
 
 ## 配置
 
-所有项目路径相关的配置集中在 `TestHelper/ExternalConfig/setting.lua`，由所有 Kit 共用。
+本机路径相关的配置集中在 `TestHelper/ExternalConfig/setting.lua`，由所有 Kit 共用。
+
+数据键的项目级补充配置位于目标项目：
+
+```lua
+-- Script/Setting/GenKit_Config.lua
+return {
+    additionalPlayerDataKeys = {},
+}
+```
+
+- 配置文件缺失或字段缺失：使用 `condition_data`、`backitem_data` 历史默认值，兼容 Withdraw。
+- 显式空数组：只使用 Package Meta 声明的数据键。
+- 非连续数组、非字符串、空字符串或非法 dataKey 会阻止 `Const_Data` 和 `Event_DataChange` 写入。
+- 补充键会同时生成数据常量和分类变更事件，不需要生成后手工修改。
 
 需要调整时，**改 `setting.lua` 即可**，不要改 `GenKit/init.lua`：
 
