@@ -2,7 +2,7 @@
 -- TestKit
 -- 包内单元测试统一管理套件
 --
--- 配置来源: ExternalConfig/setting.lua
+-- 配置来源: TestHelper/setting.json
 --   projectRoot     - 被测业务项目根（Withdraw）
 --   testHelperRoot  - TestHelper 工具根
 --   testDir         - 单元测试根目录（相对 testHelperRoot）
@@ -14,13 +14,13 @@
 -- ============================================================
 
 -- 把 TestHelper 根加入 package.path, 使得
---   require("ExternalConfig.setting") 能工作
+--   require("ExternalConfig.config") 能工作
 package.path = package.path .. ";./TestHelper/?.lua"
 
 local M = {}
 
 -- 引入项目级配置
-local setting = require("ExternalConfig.setting")
+local setting = require("ExternalConfig.config").load()
 
 -- 项目级路径
 M.PROJECT_ROOT    = setting.projectRoot     -- 被测业务项目根
@@ -109,8 +109,8 @@ end
 -- 注册一个测试包
 -- @param name    string  包名
 -- @param opts    table?  可选: { testDir = "..." }
---   opts.testDir 可省略;省略时使用 setting.testDir + "/" + name
---   (例如 name="CountDown" -> testDir = "<setting.testDir>/CountDown")
+--   opts.testDir 可省略;省略时使用 setting.json 的 testDir + "/" + name
+--   (例如 name="CountDown" -> testDir = "<testDir>/CountDown")
 function M.RegisterPackage(name, opts)
     opts = opts or {}
     local testDir = opts.testDir

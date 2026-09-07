@@ -1,0 +1,24 @@
+{
+  "projectRoot": "E:\\WeGameApps\\rail_apps\\OasisEraEditor(2001776)\\ShadowTrackerExtra\\UGCProjects\\DayBreakDefenseDemoV1",
+  "dataTableCsvRoot": "E:\\Project\\DemoExcel\\DayBreakDefenseDemoV1\\Asset\\Data\\Table\\Customized",
+  "testHelperRoot": "E:\\Project\\AgentHelper\\WithDrawCache\\TestHelper",
+  "testDir": "UnitTests",
+  "luaPath": "D:\\dev\\Lua\\lua54.exe",
+  "jsonExportRoot": "E:\\Docs",
+
+  "projectGlobalsPath": "Script\\Setting\\Project_Globals.lua",
+  "packageRegistryPath": "Script\\Setting\\Package_Registry.lua",
+  "packageMetaIndexPath": "Script\\Setting\\Package_Meta_Index.lua",
+  "coreScanDir": "Script\\Core",
+  "coreRegistryPath": "Script\\Setting\\Core_Registry.lua",
+  "commandConfigDir": "Script\\Config\\Command",
+  "commandConfigIndexPath": "Script\\Setting\\CommandConfigIndex.lua",
+  "commandListPath": "Script\\Setting\\CommandList.lua",
+  "debugKitScanDir": "Script",
+  "debugKitLineConfigPath": "Script\\Const\\Core\\Const_DebugKit.lua",
+  "debugKitPredictionPath": "Script\\Setting\\DebugKitPrediction.lua",
+  "autoTestSuiteDir": "Script\\Config\\AutoTestSuite",
+  "autoTestSuiteIndexPath": "Script\\Setting\\AutoTestSuiteIndex.lua",
+  "constDataPath": "Script\\Const\\Data\\Const_Data.lua",
+  "eventDataChangePath": "Script\\Event\\Event_DataChange.lua"
+}

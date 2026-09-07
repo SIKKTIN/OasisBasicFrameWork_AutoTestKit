@@ -2,6 +2,7 @@
 # Config - TestKit project root absolute path
 # ============================================================
 $PROJECT_ROOT = 'E:\Project\AgentHelper\WithDrawCache'
+$SETTING_FILE = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'setting.json'
 
 # TestKit launcher (UTF-8 support)
 chcp 65001 > $null
@@ -34,6 +35,17 @@ if (-not $projectRoot) {
 
 Set-Location $projectRoot
 
+if (-not (Test-Path $SETTING_FILE)) {
+    Write-Host "[ERROR] Cannot find $SETTING_FILE" -ForegroundColor Red
+    exit 1
+}
+$setting = Get-Content $SETTING_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+$luaExec = $setting.luaPath
+if (-not $luaExec -or -not (Test-Path $luaExec)) {
+    Write-Host "[ERROR] luaPath is missing or invalid in setting.json" -ForegroundColor Red
+    exit 1
+}
+
 $luaScript = "$projectRoot\TestHelper\TestKit\Run_Console.lua"
 
 if (-not (Test-Path $luaScript)) {
@@ -41,7 +53,7 @@ if (-not (Test-Path $luaScript)) {
     exit 1
 }
 
-& lua54 $luaScript
+& $luaExec $luaScript
 $exitCode = $LASTEXITCODE
 
 if ($exitCode -ne 0) {

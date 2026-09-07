@@ -18,7 +18,7 @@ package.path = package.path
 local M = {}
 
 -- 引入项目级配置
-local setting = require("ExternalConfig.setting")
+local setting = require("ExternalConfig.config").load()
 
 -- 项目根目录
 M.PROJECT_ROOT = setting.projectRoot

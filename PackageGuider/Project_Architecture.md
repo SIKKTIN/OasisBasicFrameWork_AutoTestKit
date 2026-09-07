@@ -237,7 +237,7 @@ Setting 的基本规则：
 | 变化原因 | 源码结构或声明变化 | 玩法规则或环境数据变化 |
 | 运行时职责 | 装配和发现 | 提供最终业务配置 |
 
-`TestHelper/ExternalConfig/setting.lua` 是本地工具的路径设置，不属于游戏运行时的 `Script/Setting/`，两者不要混淆。
+`TestHelper/setting.json` 是本地工具的路径设置，不属于游戏运行时的 `Script/Setting/`，两者不要混淆。
 
 ---
 

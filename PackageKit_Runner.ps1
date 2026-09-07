@@ -43,6 +43,17 @@ Write-Host ""
 
 # Run interactive console
 Set-Location $projectRoot
+$settingFile = Join-Path $projectRoot 'TestHelper\setting.json'
+if (-not (Test-Path $settingFile)) {
+    Write-Host "[ERROR] Cannot find $settingFile" -ForegroundColor Red
+    exit 1
+}
+$setting = Get-Content $settingFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$luaExec = $setting.luaPath
+if (-not $luaExec -or -not (Test-Path $luaExec)) {
+    Write-Host "[ERROR] luaPath is missing or invalid in setting.json" -ForegroundColor Red
+    exit 1
+}
 $luaScript = "$projectRoot\TestHelper\PackageKit\Run_Console.lua"
 
 if (-not (Test-Path $luaScript)) {
@@ -50,7 +61,7 @@ if (-not (Test-Path $luaScript)) {
     exit 1
 }
 
-& lua54 $luaScript
+& $luaExec $luaScript
 $exitCode = $LASTEXITCODE
 
 Write-Host ""

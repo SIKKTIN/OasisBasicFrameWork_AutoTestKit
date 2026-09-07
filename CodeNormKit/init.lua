@@ -14,9 +14,9 @@
 --   CountViolations(...)
 --
 -- 路径说明：
---   - 配置集中管理在 ExternalConfig/setting.lua
+--   - 配置集中管理在 TestHelper/setting.json
 --   - 支持通过 ps1 launcher 的 -e 参数覆盖配置值
---   - 配置文件使用 Lua 语法，支持 return { ... } 格式
+--   - 配置文件使用 JSON 格式
 -- ============================================================
 
 -- 关键：CodeNormKit 目录加入 package.path，使 init/parser/rules 可用纯文件名 require
@@ -39,7 +39,7 @@ M.RULE_DESCRIPTIONS = {
 }
 
 -- ============================================================
--- 项目配置（从 ExternalConfig/setting.lua 加载）
+-- 项目配置（从根目录 setting.json 加载）
 -- 支持运行时通过 -e 参数注入覆盖
 -- ============================================================
 
@@ -70,22 +70,9 @@ function M.LoadSettings()
 
     -- 优先用运行时注入的值（ps1 launcher -e 参数），否则从配置文件加载
     if M.PROJECT_ROOT == nil or M.TEST_HELPER_ROOT == nil then
-        local configPath = testHelperRoot .. "ExternalConfig/setting.lua"
-        local f, err = io.open(configPath, "r")
-        if f then
-            local content = f:read("*a")
-            f:close()
-            local chunk, loadErr = load(content, "@" .. configPath)
-            if chunk then
-                local cfg = chunk()
-                if M.PROJECT_ROOT == nil then
-                    M.PROJECT_ROOT = cfg.projectRoot
-                end
-                if M.TEST_HELPER_ROOT == nil then
-                    M.TEST_HELPER_ROOT = cfg.testHelperRoot
-                end
-            end
-        end
+        local config = require("ExternalConfig.config").load(testHelperRoot .. "setting.json")
+        if M.PROJECT_ROOT == nil then M.PROJECT_ROOT = config.projectRoot end
+        if M.TEST_HELPER_ROOT == nil then M.TEST_HELPER_ROOT = config.testHelperRoot end
     end
 
     -- 兜底：未配置则使用自动探测值

@@ -198,7 +198,7 @@ Core_Registry.Tick(deltaTime)
 
 ### 10. 生成 DataTable 常量
 
-本机 CSV 公共根目录配置在 `ExternalConfig/setting.lua`：
+本机 CSV 公共根目录配置在根目录 `setting.json`：
 
 ```lua
 dataTableCsvRoot = [[E:\Project\DemoExcel\DayBreakDefenseDemoV1\Asset\Data\Table\Customized]],
@@ -245,7 +245,7 @@ M.tools = {
 
 ## 配置
 
-本机路径相关的配置集中在 `TestHelper/ExternalConfig/setting.lua`，由所有 Kit 共用。
+本机路径相关的配置集中在 `TestHelper/setting.json`，由所有 Kit 共用。
 
 数据键的项目级补充配置位于目标项目：
 
@@ -261,7 +261,7 @@ return {
 - 非连续数组、非字符串、空字符串或非法 dataKey 会阻止 `Const_Data` 和 `Event_DataChange` 写入。
 - 补充键会同时生成数据常量和分类变更事件，不需要生成后手工修改。
 
-需要调整时，**改 `setting.lua` 即可**，不要改 `GenKit/init.lua`：
+需要调整时，**改 `setting.json` 即可**，不要改 `GenKit/init.lua`：
 
 ```lua
 return {
@@ -280,7 +280,7 @@ return {
 }
 ```
 
-GenKit 启动时通过 `require("ExternalConfig.setting")` 读取上述字段，并派生：
+GenKit 启动时通过公共配置加载器读取 `setting.json`，并派生：
 
 - `GenKit.PROJECT_ROOT` — 业务项目根目录
 - `GenKit.getScriptDir()` — Lua 源码目录

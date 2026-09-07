@@ -11,8 +11,8 @@
 
 local M = {}
 
--- 加载 Project_Globals（路径由 ExternalConfig/setting.lua 提供）
-local setting = require("ExternalConfig.setting")
+-- 加载 Project_Globals（路径由根目录 setting.json 提供）
+local setting = require("ExternalConfig.config").load()
 
 local function loadProjectGlobals(projectRoot)
     local path = projectRoot .. [[\]] .. setting.projectGlobalsPath

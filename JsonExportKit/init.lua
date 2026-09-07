@@ -3,7 +3,7 @@
 -- 从 Package_Meta privates 导出配置模板 JSON
 --
 -- 配置：
---   路径相关配置统一从 ExternalConfig/setting.lua 读取
+--   路径相关配置统一从根目录 setting.json 读取
 -- ============================================================
 
 local M = {}
@@ -20,7 +20,7 @@ package.path =
     .. ";" .. TEST_HELPER_ROOT .. "/?.lua"
     .. ";" .. package.path
 
-local setting = require("setting")
+local setting = require("ExternalConfig.config").load()
 
 -- ============================================================
 -- 项目根目录和目录路径

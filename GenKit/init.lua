@@ -3,14 +3,14 @@
 -- 项目代码生成工具套件
 --
 -- 配置：
---   路径相关配置统一从 ExternalConfig/setting.lua 读取
+--   路径相关配置统一从根目录 setting.json 读取
 --   设置方式见 README "配置" 一节
 -- ============================================================
 
 local M = {}
 
 -- 引入项目级配置
-local setting = require("ExternalConfig.setting")
+local setting = require("ExternalConfig.config").load()
 local Csv = require("Csv")
 
 -- 先注册自身到 package.loaded，避免循环 require
@@ -489,7 +489,8 @@ function M.writePackageRegistry(results)
     f:write("-- 使用说明:\n")
     f:write("--   1. 运行 GenKit 生成此文件\n")
     f:write("--   2. 在 LifeCycle 中调用 Package_Registry.BeginPlay()\n")
-    f:write("--   3. 新增 Package 时自动包含，无需手动添加\n")
+    f:write("--   3. 在 GameState/PlayerController Tick 中调用 Package_Registry Tick 接口\n")
+    f:write("--   4. 新增 Package 时自动包含，无需手动添加\n")
     f:write("--\n")
     f:write("-- 生成规则:\n")
     f:write("--   扫描 Script/Package/{Name}/Registry_{Name}.lua\n")
@@ -501,19 +502,80 @@ function M.writePackageRegistry(results)
         f:write(string.format('    "%s",\n', path))
     end
     f:write("}\n")
-    f:write("\n")
-    f:write("--- BeginPlay: 批量初始化所有 Registry\n")
-    f:write("function Package_Registry.BeginPlay()\n")
-    f:write("    for _, modulePath in ipairs(Package_Registry) do\n")
-    f:write("        local ok, registry = pcall(require, modulePath)\n")
-    f:write("        if ok and registry and registry.BeginPlay then\n")
-    f:write("            registry.BeginPlay()\n")
-    f:write("        end\n")
-    f:write("    end\n")
-    f:write("end\n")
-    f:write("\n")
-    f:write("return Package_Registry\n")
+    f:write([=[
 
+local loadedRegistries = {}
+local disabledTicks = {
+    GameStateTick = {},
+    PlayerTick = {},
+}
+
+local function Log(message)
+    if ugcprint then
+        ugcprint(message)
+    else
+        print(message)
+    end
+end
+
+local function LoadRegistry(modulePath)
+    if loadedRegistries[modulePath] ~= nil then
+        return loadedRegistries[modulePath] or nil
+    end
+
+    local ok, registry = pcall(require, modulePath)
+    if not ok then
+        Log("[Package_Registry] 加载失败: "
+            .. tostring(modulePath) .. ", " .. tostring(registry))
+        loadedRegistries[modulePath] = false
+        return nil
+    end
+
+    loadedRegistries[modulePath] = registry or false
+    return registry
+end
+
+--- BeginPlay: 批量初始化所有 Registry
+function Package_Registry.BeginPlay()
+    for _, modulePath in ipairs(Package_Registry) do
+        local registry = LoadRegistry(modulePath)
+        if registry and registry.BeginPlay then
+            registry.BeginPlay()
+        end
+    end
+end
+
+local function DispatchTick(tickName, ...)
+    local disabled = disabledTicks[tickName]
+    for _, modulePath in ipairs(Package_Registry) do
+        if not disabled[modulePath] then
+            local registry = LoadRegistry(modulePath)
+            local tickFunc = registry and registry[tickName]
+            if tickFunc then
+                local ok, err = pcall(tickFunc, ...)
+                if not ok then
+                    disabled[modulePath] = true
+                    Log("[Package_Registry] " .. tostring(tickName)
+                        .. " 执行失败，已禁用: " .. tostring(modulePath)
+                        .. ", " .. tostring(err))
+                end
+            end
+        end
+    end
+end
+
+--- GameStateTick: 批量分发全局 Package Tick
+function Package_Registry.GameStateTick(gameState, deltaTime)
+    DispatchTick("GameStateTick", gameState, deltaTime)
+end
+
+--- PlayerTick: 批量分发每玩家 Package Tick
+function Package_Registry.PlayerTick(playerController, deltaTime)
+    DispatchTick("PlayerTick", playerController, deltaTime)
+end
+
+return Package_Registry
+]=])
     f:close()
 
     print("")
@@ -2208,7 +2270,7 @@ function M.genTableConsts()
     local root = M.getDataTableCsvRoot()
     if not IsAbsoluteWindowsPath(root) then
         result.errors[#result.errors + 1] =
-            "ExternalConfig.setting.dataTableCsvRoot 必须是 Windows 绝对路径"
+            "setting.json 的 dataTableCsvRoot 必须是 Windows 绝对路径"
         return result
     end
 

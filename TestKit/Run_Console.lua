@@ -1,7 +1,7 @@
 -- ============================================================
 -- TestKit 交互式控制台
 -- 运行: lua54 TestKit\Run_Console.lua
--- 路径统一从 ExternalConfig/setting.lua 读取
+-- 路径统一从根目录 setting.json 读取
 -- ============================================================
 
 -- UTF-8 支持
@@ -9,7 +9,7 @@ os.execute("chcp 65001 >nul 2>&1")
 
 -- 添加 TestKit 目录 + TestHelper 根 到 package.path
 -- TestKit 根用于 require("init")
--- TestHelper 根用于 require("ExternalConfig.setting")
+-- TestHelper 根用于 require("ExternalConfig.config")
 package.path = package.path
     .. ";./TestHelper/TestKit/?.lua"
     .. ";./TestHelper/?.lua"
@@ -17,7 +17,7 @@ package.path = package.path
 local TestKit = require("init")
 
 -- 注册所有包（按需添加）
--- 不传 testDir 时,默认按 setting.testDir/<packageName> 拼接
+-- 不传 testDir 时,默认按 setting.json 的 testDir/<packageName> 拼接
 TestKit.RegisterPackage("CountDown")
 TestKit.RegisterPackage("GenKit")
 TestKit.RegisterPackage("Util")

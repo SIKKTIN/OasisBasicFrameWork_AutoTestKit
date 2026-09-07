@@ -7,7 +7,7 @@
 os.execute("chcp 65001 >nul 2>&1")
 
 -- 添加 GenKit 目录到 package.path
--- 同时把 TestHelper 根目录加进去，使 init.lua 能 require("ExternalConfig.setting")
+-- 同时把 TestHelper 根目录加进去，使 init.lua 能 require("ExternalConfig.config")
 package.path = package.path
     .. ";./TestHelper/GenKit/?.lua"
     .. ";./TestHelper/?.lua"

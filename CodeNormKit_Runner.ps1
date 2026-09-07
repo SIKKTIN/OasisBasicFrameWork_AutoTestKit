@@ -15,6 +15,13 @@ chcp 65001 | Out-Null
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$settingFile = Join-Path $scriptDir 'setting.json'
+$setting = Get-Content $settingFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$luaExec = $setting.luaPath
+if (-not $luaExec -or -not (Test-Path $luaExec)) {
+    Write-Host "[ERROR] luaPath is missing or invalid in setting.json" -ForegroundColor Red
+    exit 1
+}
 $luaScript = Join-Path $scriptDir 'CodeNormKit\Run_Console.lua'
 
 if (-not (Test-Path $luaScript)) {
@@ -22,7 +29,7 @@ if (-not (Test-Path $luaScript)) {
     exit 1
 }
 
-& lua54 $luaScript
+& $luaExec $luaScript
 $exitCode = $LASTEXITCODE
 
 Write-Host ""

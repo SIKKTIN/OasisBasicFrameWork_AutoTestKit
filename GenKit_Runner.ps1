@@ -2,20 +2,22 @@
 # GenKit 启动器
 # ============================================================
 
-$SETTING_FILE = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'ExternalConfig\setting.lua'
+$SETTING_FILE = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'setting.json'
 
-# 从 setting.lua 中读取 [[...]] 字段（仅支持顶层字符串字面量）
+# 从根目录 setting.json 读取配置字段
 function Get-SettingField {
     param([string]$Name)
     if (-not (Test-Path $SETTING_FILE)) { return $null }
-    $pattern = '(?m)^\s*' + [regex]::Escape($Name) + '\s*=\s*\[\[(.*?)\]\]'
-    $raw = Get-Content $SETTING_FILE -Raw -Encoding UTF8
-    $m = [regex]::Match($raw, $pattern)
-    if ($m.Success) { return $m.Groups[1].Value }
-    return $null
+    try {
+        $config = Get-Content $SETTING_FILE -Raw -Encoding UTF8 | ConvertFrom-Json
+        return $config.$Name
+    } catch {
+        Write-Host "[ERROR] Cannot parse $SETTING_FILE`: $($_.Exception.Message)" -ForegroundColor Red
+        return $null
+    }
 }
 
-# 默认从 setting.lua 读取 testHelperRoot，自动推算其父目录作为项目根
+# 默认从 setting.json 读取 testHelperRoot，自动推算其父目录作为项目根
 $_thRoot = Get-SettingField 'testHelperRoot'
 if ($_thRoot) {
     $PROJECT_ROOT = (Split-Path -Parent $_thRoot.TrimEnd('\','/'))
@@ -63,7 +65,7 @@ if (-not (Test-Path $luaScript)) {
 
 $luaExec = Get-SettingField 'luaPath'
 if (-not $luaExec) {
-    Write-Host "[ERROR] Cannot find luaPath in setting.lua" -ForegroundColor Red
+    Write-Host "[ERROR] Cannot find luaPath in setting.json" -ForegroundColor Red
     exit 1
 }
 if (-not (Test-Path $luaExec)) {

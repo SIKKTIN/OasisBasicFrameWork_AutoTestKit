@@ -24,21 +24,20 @@ TestHelper/
         └── Cases/
             └── Index.lua                    # 从配置加载测试用例
 
-ExternalConfig/                              # 配置文件（独立于 CodeNormKit）
-    ├── setting.lua                         # 项目路径配置
-    └── tests.lua                          # 测试用例配置
+setting.json                                 # 项目路径配置
+ExternalConfig/                              # CodeNormKit 测试用例配置
+    └── tests.lua
 ```
 
 ## 配置
 
-项目路径通过 `ExternalConfig/setting.lua` 管理：
+项目路径通过根目录 `setting.json` 管理：
 
-```lua
--- ExternalConfig/setting.lua
-return {
-    projectRoot = [[E:\WeGameApps\...]],     -- 被测业务项目根
-    testHelperRoot = [[E:\...\TestHelper]],  -- TestHelper 工具根
-    projectGlobalsPath = [[Script\...]],     -- 项目全局白名单文件
+```json
+{
+    "projectRoot": "E:\\...",
+    "testHelperRoot": "E:\\...\\TestHelper",
+    "projectGlobalsPath": "Script\\..."
 }
 ```
 
