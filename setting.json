@@ -4,7 +4,6 @@
   "testHelperRoot": "E:\\Project\\AgentHelper\\WithDrawCache\\TestHelper",
   "testDir": "UnitTests",
   "luaPath": "D:\\dev\\Lua\\lua54.exe",
-  "jsonExportRoot": "E:\\Docs",
 
   "projectGlobalsPath": "Script\\Setting\\Project_Globals.lua",
   "packageRegistryPath": "Script\\Setting\\Package_Registry.lua",

@@ -12,7 +12,6 @@ Oasis 绿洲启元编辑器 UGC 包测试工具集。
 | `PackageGuider/` | Package 开发指南文档 |
 | `CodeNormKit/` | 代码规范检查工具（**暂不可用**） |
 | `GenKit/` | Package_Meta 索引生成工具 |
-| `JsonExportKit/` | JSON 导入/导出交互控制台（**暂不可用**） |
 | `ExternalConfig/` | 外部配置（路径设置） |
 
 ## 快速开始
@@ -35,14 +34,6 @@ Oasis 绿洲启元编辑器 UGC 包测试工具集。
 
 ```powershell
 .\GenKit_Runner.ps1
-```
-
-### 导出/导入 JSON
-
-> **暂不可用：** JsonExportKit 当前处于不可用阶段，请勿运行以下命令。
-
-```powershell
-.\JsonExportKit_Runner.ps1
 ```
 
 ### 查询 Package 信息

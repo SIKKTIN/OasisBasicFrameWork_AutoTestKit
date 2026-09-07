@@ -352,10 +352,6 @@ GenKit 提供四个常用预设：
 | PackageKit | 检查 `Package_Meta.dependsOn` 是否能在 `Project_Globals` 中解析。 | 本地静态检查 |
 | CodeNormKit | 检查 Package System 对 Meta 私有表的违规读取、索引和取长度。 | 本地静态检查 |
 | AutoTestKit | 从生成索引加载 Suite，在游戏运行环境执行断言。 | 运行时回归测试 |
-| JsonExportKit | 从 `Package_Meta.privates` 导出 JSON 模板，并支持导入、差异和冲突处理。 | 配置协作流程 |
-
-JsonExportKit 当前仍使用 `Package_Meta.privates` 作为配置映射来源。它与新的外置 Config 目录规范如何统一属于后续设计，现阶段不能假设所有 Define 或 Config 都会自动参与 JSON 导入导出。
-
 ### 自动化边界
 
 以下事项目前仍需要开发者明确执行或复核：
@@ -364,7 +360,6 @@ JsonExportKit 当前仍使用 `Package_Meta.privates` 作为配置映射来源�
 - PackageKit 当前验证依赖名称是否存在，不等价于完整的循环依赖和架构方向分析。
 - 未纳入 Package Meta 的历史玩家数据键通过项目级 `Script/Setting/GenKit_Config.lua` 配置，并由 GenKit 同步生成常量和变更事件；已迁入 Package 的数据键不再重复配置。
 - 工具不会自动迁移旧 Service、Manager、Tool，也不会替代业务回归测试。
-- JsonExportKit 与 Define + 外置 Config 的最终映射契约尚未自动化。
 - 生成成功只说明结构一致，不代表客户端、服务端权限和事务语义正确。
 
 ### 标准变更流程
@@ -376,7 +371,7 @@ JsonExportKit 当前仍使用 `Package_Meta.privates` 作为配置映射来源�
 5. 在 AutoTestKit 中执行受影响的 Suite 和必要的业务回归。
 6. 再次运行同一生成器，确认没有额外漂移后提交。
 
-本地工具的入口位于 `TestHelper/GenKit_Runner.ps1`、`PackageKit_Runner.ps1`、`CodeNormKit_Runner.ps1` 和 `JsonExportKit_Runner.ps1`。
+本地工具的入口位于 `TestHelper/GenKit_Runner.ps1`、`PackageKit_Runner.ps1` 和 `CodeNormKit_Runner.ps1`。
 
 ---
 
@@ -462,5 +457,5 @@ System_MakeUp 校验并执行事务
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
-| 1.1 | 2026-09-03 | 增加 Setting 职责，并记录 GenKit、PackageKit、CodeNormKit、AutoTestKit 和 JsonExportKit 的自动化现状与边界。 |
+| 1.1 | 2026-09-03 | 增加 Setting 职责，并记录 GenKit、PackageKit、CodeNormKit 和 AutoTestKit 的自动化现状与边界。 |
 | 1.0 | 2026-09-03 | 建立 Core–Package–Const–Config–Event 项目架构总纲。 |
