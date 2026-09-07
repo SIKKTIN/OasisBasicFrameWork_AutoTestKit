@@ -79,7 +79,7 @@ dependsOn = {
 
 ## privates
 
-`privates` 用于声明 Package 内部模块持有的私有数据，供规范检查和工具分析使用。
+`privates` 用于声明 Package 内部模块持有的私有数据，供工具分析使用。
 
 ```lua
 privates = {
@@ -209,4 +209,3 @@ return {
 | 1.2 | 2026-09-01 | 统一 Collect 模式，加入 `dependsOn`、`gameData`，明确 `itemFields` 为唯一字段描述形式，移除 `exposedVia`。 |
 | 1.1 | 2026-08-25 | 新增 `playerData` 顶层字段。 |
 | 1.0 | 2026-08-24 | 初始版本。 |
-

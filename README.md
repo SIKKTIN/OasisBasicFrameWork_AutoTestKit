@@ -10,7 +10,6 @@ Oasis 绿洲启元编辑器 UGC 包测试工具集。
 | `UnitTests/` | 测试用例目录 |
 | `PackageKit/` | Package 元信息查询工具 |
 | `PackageGuider/` | Package 开发指南文档 |
-| `CodeNormKit/` | 代码规范检查工具（**暂不可用**） |
 | `GenKit/` | Package_Meta 索引生成工具 |
 | `ExternalConfig/` | 外部配置（路径设置） |
 
@@ -20,14 +19,6 @@ Oasis 绿洲启元编辑器 UGC 包测试工具集。
 
 ```powershell
 .\TestKit_Runner.ps1
-```
-
-### 代码规范检查
-
-> **暂不可用：** CodeNormKit 当前处于不可用阶段，请勿运行以下命令。
-
-```powershell
-.\CodeNormKit_Runner.ps1
 ```
 
 ### 生成 Package 索引

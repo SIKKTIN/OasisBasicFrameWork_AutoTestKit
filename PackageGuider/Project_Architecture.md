@@ -315,7 +315,7 @@ GenKit 扫描、预览
       ↓
 运行时通过 Setting / Const / Event 固定模块加载
       ↓
-PackageKit / CodeNormKit / AutoTestKit 验证
+PackageKit / AutoTestKit 验证
 ```
 
 这种方式避免运行时文件系统扫描，同时保留生成结果的可读性和版本差异。手写源码与 `Package_Meta.lua` 是事实来源，生成文件只是可重建产物。
@@ -350,7 +350,6 @@ GenKit 提供四个常用预设：
 |------|----------|----------|
 | GenKit | 扫描源码并生成可复现的静态索引、常量和事件。 | 本地开发期 |
 | PackageKit | 检查 `Package_Meta.dependsOn` 是否能在 `Project_Globals` 中解析。 | 本地静态检查 |
-| CodeNormKit | 检查 Package System 对 Meta 私有表的违规读取、索引和取长度。 | 本地静态检查 |
 | AutoTestKit | 从生成索引加载 Suite，在游戏运行环境执行断言。 | 运行时回归测试 |
 ### 自动化边界
 
@@ -367,11 +366,11 @@ GenKit 提供四个常用预设：
 1. 修改 Core、Package、Meta、Config、命令或测试 Suite 的手写源。
 2. 运行对应 GenKit 预设或单项生成器。
 3. 审查生成文件差异，确认没有异常新增、丢失或 ID 漂移。
-4. 运行 PackageKit 和相关 CodeNormKit 检查。
+4. 运行 PackageKit 检查。
 5. 在 AutoTestKit 中执行受影响的 Suite 和必要的业务回归。
 6. 再次运行同一生成器，确认没有额外漂移后提交。
 
-本地工具的入口位于 `TestHelper/GenKit_Runner.ps1`、`PackageKit_Runner.ps1` 和 `CodeNormKit_Runner.ps1`。
+本地工具的入口位于 `TestHelper/GenKit_Runner.ps1` 和 `PackageKit_Runner.ps1`。
 
 ---
 
@@ -457,5 +456,5 @@ System_MakeUp 校验并执行事务
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
-| 1.1 | 2026-09-03 | 增加 Setting 职责，并记录 GenKit、PackageKit、CodeNormKit 和 AutoTestKit 的自动化现状与边界。 |
+| 1.1 | 2026-09-03 | 增加 Setting 职责，并记录 GenKit、PackageKit 和 AutoTestKit 的自动化现状与边界。 |
 | 1.0 | 2026-09-03 | 建立 Core–Package–Const–Config–Event 项目架构总纲。 |
