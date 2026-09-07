@@ -349,14 +349,14 @@ GenKit 提供四个常用预设：
 | 工具 | 当前职责 | 使用位置 |
 |------|----------|----------|
 | GenKit | 扫描源码并生成可复现的静态索引、常量和事件。 | 本地开发期 |
-| PackageKit | 检查 `Package_Meta.dependsOn` 是否能在 `Project_Globals` 中解析。 | 本地静态检查 |
+| PackageKit | 检查 `Package_Meta.dependsOn`，并检查 Package 内部模块是否创建隐式全局。 | 本地静态检查 |
 | AutoTestKit | 从生成索引加载 Suite，在游戏运行环境执行断言。 | 运行时回归测试 |
 ### 自动化边界
 
 以下事项目前仍需要开发者明确执行或复核：
 
 - GenKit 不是后台监听器；新增、移动、删除模块或修改 Meta 后需要手动运行对应生成器。
-- PackageKit 当前验证依赖名称是否存在，不等价于完整的循环依赖和架构方向分析。
+- PackageKit 当前验证 Package 核心文件、依赖名称和 Package 局部模块约束，不等价于完整的循环依赖和架构方向分析。
 - 未纳入 Package Meta 的历史玩家数据键通过项目级 `Script/Setting/GenKit_Config.lua` 配置，并由 GenKit 同步生成常量和变更事件；已迁入 Package 的数据键不再重复配置。
 - 工具不会自动迁移旧 Service、Manager、Tool，也不会替代业务回归测试。
 - 生成成功只说明结构一致，不代表客户端、服务端权限和事务语义正确。

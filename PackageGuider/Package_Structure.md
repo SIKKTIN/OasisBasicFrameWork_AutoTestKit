@@ -11,7 +11,7 @@ Withdraw/Script/
 ├── Package/<PackageName>/
 │   ├── Package_Meta.lua              -- 必选：包元数据与数据契约
 │   ├── Registry_<PackageName>.lua    -- 必选：唯一对外门面
-│   ├── README.md                     -- 推荐：包职责、接口和数据说明
+│   ├── README.md                     -- 必选：包职责、接口和数据说明
 │   ├── Data/                         -- 按需：领域定义和数据初始化
 │   │   ├── Define_<Subject>.lua
 │   │   ├── PlayerData_<Subject>.lua
@@ -37,7 +37,7 @@ Withdraw/Script/
 |------|------|------|
 | `Package_Meta.lua` | 必选 | 声明 `packageKind`、`packageName`、依赖和 PlayerDataCore/GameDataCore 数据入口。 |
 | `Registry_<PackageName>.lua` | 必选 | Package 唯一对外门面，组合内部模块并暴露有限公共 API。 |
-| `README.md` | 推荐 | 说明 Package 边界、数据结构、对外 API 和生命周期。 |
+| `README.md` | 必选 | 说明 Package 边界、数据结构、对外 API 和生命周期。 |
 | `Data/Define_<Subject>.lua` | 按需 | 定义领域常量、结构约束、构造、校验、纯 Getter，以及小型稳定代码配置。 |
 | `Config/Package/<PackageName>/Config_<Subject>.lua` | 按需 | 保存可外部编辑或覆盖的配置，并负责加载、合并、缓存和来源诊断。 |
 
@@ -65,6 +65,24 @@ local Registry_Name = require("Script.Package.Name.Registry_Name")
 只读外部能力归入 Query；外部写操作、事件绑定和生命周期归入 System。不要为引擎、蓝图或网络调用额外创建等价中间层。
 
 Package 内部模块默认使用 `local Module = {}` 和 `return Module`，不创建隐式全局变量。除非由 Registry 明确转发，否则包外不可直接依赖内部实现模块。
+
+PackageKit 会扫描 `Script/Package/**` 下的 Lua 文件，禁止顶层隐式全局模块或全局函数定义，并检查每个 Package 根目录是否包含 `Package_Meta.lua`、`Registry_<PackageName>.lua` 和 `README.md`。引擎全局 API 的调用可以正常使用，但 Package 自身模块必须通过 `local` 声明，并由 Registry 或模块返回值提供能力。
+
+允许：
+
+```lua
+local Module = {}
+local function helper() end
+function Module.DoSomething() end
+return Module
+```
+
+禁止：
+
+```lua
+Module = Module or {}
+function Module_DoSomething() end
+```
 
 ---
 
