@@ -1,8 +1,6 @@
 {
-  "projectRoot": "E:\\WeGameApps\\rail_apps\\OasisEraEditor(2001776)\\ShadowTrackerExtra\\UGCProjects\\DayBreakDefenseDemoV1",
+  "projectRoot": "E:\\WeGameApps\\rail_apps\\OasisEraEditor(2001776)\\ShadowTrackerExtra\\UGCProjects\\PetsGo",
   "dataTableCsvRoot": "E:\\Project\\DemoExcel\\DayBreakDefenseDemoV1\\Asset\\Data\\Table\\Customized",
-  "testHelperRoot": "E:\\Project\\AgentHelper\\WithDrawCache\\TestHelper",
-  "testDir": "UnitTests",
   "luaPath": "D:\\dev\\Lua\\lua54.exe",
 
   "projectGlobalsPath": "Script\\Setting\\Project_Globals.lua",

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oasis 项目上下文初始化"
+  short_description: "新对话先阅读项目文档，核对实现与进度，建立后续开发所需上下文"
+  default_prompt: "使用 $oasis-project-init 阅读本次项目文档与开发约定，结合相关实现和进度建立当前对话的项目上下文，并简要说明你的理解及不确定项。"

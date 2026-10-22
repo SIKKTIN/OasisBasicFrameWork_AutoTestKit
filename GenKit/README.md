@@ -1,33 +1,40 @@
 # GenKit - 代码生成工具
 
-项目代码生成工具套件，参考 TestKit 的架构。
+项目代码生成工具套件，提供交互式控制台和独立的工具测试。
 
 ## 目录结构
 
 ```
 TestHelper/
-├── GenKit/
-│   ├── init.lua          # 核心生成逻辑
-│   ├── Run_Console.lua   # 交互式控制台
-│   └── README.md         # 本文件
-└── GenKit_Runner.ps1     # 启动器
+└── GenKit/
+    ├── init.lua          # 核心生成逻辑
+    ├── Csv.lua           # CSV 解析
+    ├── Run_Console.lua   # 交互式控制台
+    ├── Tests/            # CSV 与表常量生成测试
+    └── README.md         # 本文件
 ```
 
 ## 使用方法
 
-### 方式一：PowerShell 启动器（推荐）
-
-```powershell
-cd E:\Project\AgentHelper\WithDrawCache
-.\TestHelper\GenKit_Runner.ps1
-```
-
-### 方式二：直接运行 Lua
+### 启动控制台
 
 ```powershell
 cd E:\Project\AgentHelper\WithDrawCache
 lua54 TestHelper\GenKit\Run_Console.lua
 ```
+
+`lua54` 需已加入 PATH，也可以使用 `setting.json` 中 `luaPath` 指定的 Lua 5.4 可执行文件。
+
+### 运行工具测试
+
+```powershell
+cd E:\Project\AgentHelper\WithDrawCache
+lua54 TestHelper\GenKit\Tests\Test_TableConsts.lua
+lua54 TestHelper\GenKit\Tests\Test_TableConstNameCase.lua
+```
+
+测试根据脚本位置加载 GenKit，不依赖 TestKit 控制台。测试失败时返回非零退出码，不写入生成文件。
+`Test_TableConsts.lua` 包含实际项目配置和 CSV 的预览检查，需要当前配置中的项目及已登记的 CSV 可读，无表声明时验证空预览；`Test_TableConstNameCase.lua` 仅使用内存数据检查常量名称规则。
 
 ## 使用模式
 
@@ -224,6 +231,10 @@ tableConsts = {
 生成文件带有 EmmyLua `---@enum` 标注，可供 Lua 编辑器补全和类型检查。
 生成结果应提交版本库，但不得手工编辑。
 
+常量名默认转为全大写。迁移已有混合大小写 API 时，可在表声明中设置
+`nameCase = "preserve"`，保留 `Bandage`、`HelmetLV1` 等原名；该模式同样
+检查标识符、重复项及 Lua 保留字。未配置时保持原有 `upper` 行为。
+
 ## 扩展新工具
 
 在 `GenKit/init.lua` 中添加新的生成器：
@@ -247,6 +258,8 @@ M.tools = {
 
 本机路径相关的配置集中在 `TestHelper/setting.json`，由所有 Kit 共用。
 
+工具根目录由 `ExternalConfig/config.lua` 根据自身位置自动确定，无需在 `setting.json` 中配置 `testHelperRoot`。
+
 数据键的项目级补充配置位于目标项目：
 
 ```lua
@@ -268,9 +281,6 @@ return {
     -- 被测业务项目根目录
     projectRoot = [[E:\WeGameApps\rail_apps\OasisEraEditor(2001776)\ShadowTrackerExtra\UGCProjects\Withdraw]],
 
-    -- TestHelper 工具根目录
-    testHelperRoot = [[E:\Project\AgentHelper\WithDrawCache\TestHelper]],
-
     -- 项目全局白名单文件（相对于 projectRoot）
     projectGlobalsPath = [[Script\Setting\Project_Globals.lua]],
 
@@ -287,3 +297,11 @@ GenKit 启动时通过公共配置加载器读取 `setting.json`，并派生：
 - `GenKit.getProjectGlobalsOutputPath()` — Project_Globals.lua 绝对路径
 - `GenKit.getCoreScanDir()` — Core Global 扫描目录
 - `GenKit.getCoreRegistryOutputPath()` — Core_Registry.lua 绝对路径
+
+## 生命周期注册表输出
+
+Core_Registry 与 Package_Registry 汇总加载、BeginPlay 异常和明确 false；无返回值保留兼容。成功项不重复初始化，显式重试只处理失败项；失败模块不 Tick，Tick 异常停用对应模块/方法。Core 仍保留 Global 预加载与全局表导出兼容。模块内部的失败副作用不由生成器回滚，需自行幂等处理。
+
+Package_Meta_Index.Load() 第一返回值仍为 Meta 数组，第二返回值为加载错误列表；DataCore 必须检查错误，避免少加载包仍报告成功。模板初始注册表和索引以这些写出函数为空输入的结果维护。
+
+使用 `lua GenKit/Tests/Test_LifecycleRegistries.lua` 执行针对性回归。生成输出在内存中捕获，不写 setting.json 所指向的项目。

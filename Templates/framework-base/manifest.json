@@ -1,0 +1,697 @@
+{
+  "name": "framework-base",
+  "version": "0.4.2-draft",
+  "status": "draft",
+  "description": "通用 Core、LifeCycle、事件、JSON UI 表与玩家属性组件；部署必须同步实际四个入口、生成目标注册清单并通过 PIE 验收，GM、AttributeSystem 与 SkillSystem 独立可选。",
+  "sourceProject": "DayBreakDefenseDemoV1",
+  "contentRoot": "Project",
+  "modules": [
+    {
+      "name": "ClientCache",
+      "path": "Script/Core/ClientCache",
+      "projectDependencies": [],
+      "engineDependencies": [
+        "UGCGameSystem.IsServer",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.ClientCache.Global_ClientCache",
+      "exportedGlobal": "Global_ClientCache",
+      "notes": "Global_ClientCache 未显式 return，通过全局表提供 API；保留源项目已有 Type.EVACUATE_SETTLE 标签，当前未做通用化改写。"
+    },
+    {
+      "name": "EventSystem",
+      "path": "Script/Core/EventSystem",
+      "projectDependencies": [],
+      "engineDependencies": [],
+      "loadModule": "Script.Core.EventSystem.UGCEventSystem",
+      "exportedGlobal": "UGCEventSystem",
+      "notes": "同步通知总线；同事件/函数/对象去重，按快照隔离监听异常。返回广播执行状态，不汇总监听函数业务返回值；显式 return 全局表。",
+      "startupValidation": {
+        "test": "Tests/Test_LifeCycle.lua",
+        "runtimeVerified": false
+      }
+    },
+    {
+      "name": "DebugKit",
+      "path": "Script/Core/DebugKit",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Const/Core/Const_DebugKit.lua",
+        "Script/Setting/DebugKitPrediction.lua"
+      ],
+      "optionalGeneratedDependencies": [
+        "Script/Setting/DebugKitPrediction.lua"
+      ],
+      "engineDependencies": [
+        "UGCGameSystem.IsServer",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.DebugKit.Global_DebugKit",
+      "exportedGlobal": "Global_DebugKit",
+      "notes": "随包提供 Lifecycle、PlayerLifecycle 通用检测线及空预测配置；目标项目生成具体预测后可用于节点比对。"
+    },
+    {
+      "name": "UISystem",
+      "path": "Script/Core/UISystem",
+      "projectDependencies": [],
+      "engineDependencies": [
+        "UGCGameSystem.GetTableData",
+        "UGCGameSystem.GetUGCResourcesFullPath",
+        "UGCMapInfoLib.GetRootLongPackagePath",
+        "UE.LoadClass",
+        "UGCWidgetManagerSystem",
+        "CreateStruct",
+        "Vector2D",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.UISystem.Global_UI",
+      "exportedGlobal": "Global_UI",
+      "notes": "按 JSON 在目标项目创建 UI 空表及本地结构体，无需 CSV 或旧资产；有效空表初始化成功，由完整入口及实际 Core 清单启动。",
+      "generatedDependencies": [
+        "Asset/Data/Table/Customized/DT_UI_Config.uasset",
+        "Asset/Data/Table/Customized/UGCTemplateRowStruct_DT_UI_Config.uasset"
+      ],
+      "initializationMode": "mcp-json-empty-table",
+      "schemaDeploymentValidation": {
+        "project": "TempleTest",
+        "date": "2026-10-21",
+        "probeAsset": "/TempleTest/Asset/Data/Table/Customized/JsonDeployProbe/DT_UI_Config_JSONProbe",
+        "mode": "json-only",
+        "csvUsed": false,
+        "fieldCount": 6,
+        "rowCount": 0,
+        "structureSaved": true,
+        "tableSaved": true,
+        "repeatConfiguration": "unchanged",
+        "existingAssetGuardVerified": true,
+        "projectMismatchGuardVerified": true,
+        "editorRestartReloadVerified": false,
+        "runtimeVerified": false
+      }
+    },
+    {
+      "name": "TipSystem",
+      "path": "Script/Core/TipSystem",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Const/Core/Const_Tip.lua"
+      ],
+      "engineDependencies": [
+        "UGCWidgetManagerSystem.ShowTipsUI",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.TipSystem.Global_Tip",
+      "exportedGlobal": "Global_Tip",
+      "integrationRequirements": [
+        "客户端通过 GameState 的 LifeCycle.Tick 持续驱动 Global_Tip.Tick，禁止重复驱动。",
+        "owner 仅用于队列分组和有效性检查，服务端向客户端发送提示需由调用方提供 RPC。"
+      ],
+      "knownLimitations": [
+        "延迟按帧数计算，Tick 忽略 DeltaTime；FIRST_DELAY_FRAMES=30，DEFAULT_DELAY_FRAMES=90。",
+        "Clear(nil) 不清空全局队列。"
+      ],
+      "notes": "两个实现脚本及优先级常量均原样复制；无需 UISystem、数据表或自定义资产。服务端通知 RPC 可由可选 GM 适配提供。"
+    },
+    {
+      "name": "CommandSystem",
+      "path": "Script/Core/CommandSystem",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Setting/CommandConfigIndex.lua"
+      ],
+      "engineDependencies": [
+        "UGCGameSystem.IsServer",
+        "UGCGameSystem.GetLocalPlayerController",
+        "UGCGameSystem.GetPlayerKeyByPlayerController",
+        "UnrealNetwork.CallUnrealRPC",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.CommandSystem.Global_CommandSystem",
+      "exportedGlobal": "Global_CommandSystem",
+      "integrationRequirements": [
+        "空索引允许零指令初始化；目标项目在 Script/Config/Command 添加声明后，由 GenKit 生成 CommandConfigIndex.lua。",
+        "跨端执行及结果回传由可选 GM 的控制器适配提供；未安装 GM 时仍须完成框架接入，本地执行不依赖 GM。"
+      ],
+      "notes": "核心脚本收录，Global.BeginPlay 修复为透传 Initialize 结果，新建空 CommandConfigIndex 作为初始种子，不收录来源项目业务指令。保留 Enabled=true 和 CanExecute 默认放行配置；已有目标索引按文件冲突规则保留。",
+      "startupValidation": {
+        "test": "GenKit/Tests/Test_LifecycleRegistries.lua",
+        "runtimeVerified": false,
+        "testBase": "toolRoot"
+      }
+    },
+    {
+      "name": "AutoTestKit",
+      "path": "Script/Core/AutoTestKit",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Setting/AutoTestSuiteIndex.lua"
+      ],
+      "engineDependencies": [
+        "ugcprint"
+      ],
+      "optionalEngineDependencies": [
+        "UnrealNetwork.CallUnrealRPC"
+      ],
+      "loadModule": "Script.Core.AutoTestKit.Global_AutoTestKit",
+      "exportedGlobal": "Global_AutoTestKit",
+      "integrationRequirements": [
+        "执行测试的入口持续调用 Global_AutoTestKit.Tick(DeltaTime)；不自动运行套件。",
+        "传入 PlayerController 时使用 Client_TipContent 通知，由可选 GM 适配提供；未接该通道时传 nil，仅记录日志和报告。",
+        "目标项目在 Script/Config/AutoTestSuite 添加套件后由 GenKit 生成索引；空索引初始化成功，RunAll 返回 false 且报告 no-tests。"
+      ],
+      "notes": "五个核心脚本与新建空索引随包部署，不迁入来源业务 Suite。模板修复初始化错误反馈、断言结果锁定、生命周期错误记录及单 Case/Stop 清理；GetReport 提供最终状态，生命周期错误独立于 Case 数量。",
+      "validation": {
+        "test": "Tests/Test_AutoTestKit.lua",
+        "type": "isolated-lua",
+        "checksPassed": 24,
+        "engineNotifications": "mocked",
+        "runtimeVerified": false
+      }
+    },
+    {
+      "name": "GameDataCore",
+      "path": "Script/Core/GameDataCore",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Setting/Package_Meta_Index.lua",
+        "Script/Event/Event_DataChange.lua",
+        "Script/Core/EventSystem/UGCEventSystem.lua"
+      ],
+      "engineDependencies": [
+        "UGCGameSystem.GetGameState",
+        "UGCGameSystem.IsServer",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.GameDataCore.Global_GameDataCore",
+      "exportedGlobal": "Global_GameDataCore",
+      "integrationRequirements": [
+        "先加载事件总线；初始化必须生成实际 Core 清单并同步 GameState 入口，由 LifeCycle 启动。",
+        "空 Meta 索引允许零 gameData 初始化；新增 gameData 后由目标项目 GenKit 生成 Meta、数据常量和分类变更事件，并接入 GameState 字段复制。"
+      ],
+      "notes": "Global 原样复制；System 修复 DataInit false、Meta 错误反馈及失败后显式重试。重试重建声明，失败模块内部 DataInit 须幂等；其他已审查问题留待处理。",
+      "validation": {
+        "test": "Tests/Test_GameDataCore.lua",
+        "type": "isolated-lua",
+        "checksPassed": 8,
+        "gameState": "mocked",
+        "runtimeVerified": false
+      },
+      "startupValidation": {
+        "test": "GenKit/Tests/Test_LifecycleRegistries.lua",
+        "runtimeVerified": false,
+        "testBase": "toolRoot"
+      }
+    },
+    {
+      "name": "PlayerDataCore",
+      "path": "Script/Core/PlayerDataCore",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Setting/Package_Meta_Index.lua",
+        "Script/Const/Data/Const_Data.lua",
+        "Script/Event/EventType.lua",
+        "Script/Event/Event_DataChange.lua",
+        "Script/Core/EventSystem/UGCEventSystem.lua"
+      ],
+      "engineDependencies": [
+        "UGCGameSystem.IsServer",
+        "UGCGameSystem.GetUIDByPlayerController",
+        "UGCGameSystem.GetPlayerKeyByPlayerController",
+        "UGCPlayerStateSystem.GetPlayerArchiveData",
+        "UGCPlayerStateSystem.SavePlayerArchiveData",
+        "ugcprint"
+      ],
+      "loadModule": "Script.Core.PlayerDataCore.Global_PlayerDataCore",
+      "exportedGlobal": "Global_PlayerDataCore",
+      "integrationRequirements": [
+        "先加载 EventType 和事件总线；初始化必须生成实际 Core 清单并同步实际入口，由 LifeCycle 启动。",
+        "通用 PropertyComponent 不依赖 Registry_ConditionData；CheckArchiveData 返回 true=已有、false=无存档、nil=错误，仅 false 分支调用 InitAllData(playerKey)，汇总成功才首次保存。不要同时发送旧初始化事件再直接初始化。 初始化及首次保存或恢复成功后，由组件调用 LifeCycle.NotifyPlayerDataLoaded(pc)。",
+        "空 table 或 nil 且 GetPlayerDataSize(uid)==0 确认为无存档；其他 nil、读取异常、非空无标记存档或不支持版本均为错误。PIE 已确认空存档 nil/零字节，跨对局持久化仍待验收。",
+        "按目标声明生成数据常量、Meta 及分类变更事件，实际 PlayerController 入口按生成常量接入数据复制；未声明玩家数据包时跳过保存。"
+      ],
+      "archiveFormat": {
+        "metadataKey": "__oasisArchive",
+        "version": 1,
+        "businessLayout": "flat",
+        "legacyMigration": "explicit-only"
+      },
+      "knownLimitations": [
+        "不迁入业务 PropertyComponent；来源组件的 if not CheckArchiveData 和 ConditionData.IsInitialized 不适用于本模板新协议。",
+        "无标记旧存档需要独立迁移；不自动覆盖。恢复缺失包保持来源空表回退，不新增逐包初始化或迁移机制。",
+        "DataFormat false 返回、嵌套查询边界、多数据键反查尚未修复；Meta 错误反馈、失败后显式重试及事件异常隔离已处理。"
+      ],
+      "notes": "Global 原样复制；System 使用独立框架存档标记，修复 DataInit 失败结果、读写异常反馈及恢复前的数据包类型检查。标记不登记到 Const_Data 或复制字段。其他审查问题未在本次扩展修复。 本次补齐 Meta 错误反馈与失败后显式重试，未加载 EventType 时返回失败而非直接抛异常。",
+      "validation": {
+        "test": "Tests/Test_PlayerDataCore.lua",
+        "type": "isolated-lua",
+        "checksPassed": 20,
+        "engineArchive": "mocked",
+        "runtimeVerified": false
+      },
+      "startupValidation": {
+        "test": "GenKit/Tests/Test_LifecycleRegistries.lua",
+        "runtimeVerified": false,
+        "testBase": "toolRoot"
+      },
+      "optionalEngineDependencies": [
+        "UGCPlayerStateSystem.GetPlayerDataSize"
+      ]
+    },
+    {
+      "name": "LifeCycle",
+      "path": "Script/Core/LifeCycle",
+      "projectDependencies": [],
+      "bundledDependencies": [
+        "Script/Event/EventType.lua",
+        "Script/Core/EventSystem/UGCEventSystem.lua",
+        "Script/Core/DebugKit/Global_DebugKit.lua",
+        "Script/Setting/Core_Registry.lua",
+        "Script/Setting/Package_Registry.lua"
+      ],
+      "engineDependencies": [
+        "UGCGameSystem.IsServer",
+        "UGCGameSystem.GetPlayerKeyByPlayerController",
+        "UGCGameSystem.GetLocalPlayerController",
+        "UGCGameSystem.GetPlayerControllerByPlayerPawn",
+        "UGCGameSystem.GetPlayerPawnByPlayerController",
+        "ugcprint"
+      ],
+      "optionalEngineDependencies": [
+        "UGCObjectUtility.IsObjectValid"
+      ],
+      "loadModule": "Script.Core.LifeCycle.Life_Cycle",
+      "exportedGlobal": "LifeCycle",
+      "initializationMode": "explicit-bootstrap",
+      "integrationRequirements": [
+        "显式加载，不加入 Core_Registry；BeginPlay 注册监听，OnGameStateInit 汇总启动结果，Tick 驱动条件等待、Core.Tick 与 Package.GameStateTick，旧入口不可重复 Tick。",
+        "空注册表仅为种子；初始化必须生成目标清单并完成 GameState、PC/Pawn 创建/退出接线，PropertyComponent 按 JSON 通过 MCP 创建并挂载。",
+        "业务 GameMode 可在包 BeginPlay 订阅两端 Lifecycle_FrameworkReady 后自行 LoadCurrentMode；GM 已作为独立可选模板订阅本地 PC 事件，LifeCycle 无二者依赖。",
+        "数据加载方成功后调用 NotifyPlayerDataLoaded，不能依靠旧固定延时或仅发旧广播；服务端 Pawn 等实际数据就绪，客户端只处理本地 PC/Pawn。"
+      ],
+      "knownLimitations": [
+        "真实 PIE、对象有效性与跨对局存档语义未验证。",
+        "同一 Lua 世界只支持同一 GameState；不提供任意模块副作用回滚或同 VM 跨 GameState 卸载重启。",
+        "FrameworkReady 不等于地图或业务加载完成；监听返回 false 不作为业务结果汇总，失败包需自行记录结果/重试。"
+      ],
+      "validation": {
+        "test": "Tests/Test_LifeCycle.lua",
+        "type": "isolated-lua",
+        "checksPassed": 31,
+        "engine": "mocked",
+        "runtimeVerified": false
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "Script/Const/Core/Const_DebugKit.lua",
+      "sha256": "1f22e92fd688e3eb6f9165d8a19a48f0d2cf619f17c6b59044d806c2cb897ba2"
+    },
+    {
+      "path": "Script/Core/ClientCache/Global_ClientCache.lua",
+      "sha256": "2eed3d65cef34853176de5556aa6f84c312277ac83cd866a75a26e1dc7b22571"
+    },
+    {
+      "path": "Script/Core/ClientCache/System_ClientCache.lua",
+      "sha256": "1499b48ad3ad50fe4993166bb20c6d75fdfe26c2300815a5e94269f3427bd2b6"
+    },
+    {
+      "path": "Script/Core/DebugKit/Global_DebugKit.lua",
+      "sha256": "bb442d8a9b92507ef3f20959097e93640af81d0b50dc60eac857dec4326cf09a"
+    },
+    {
+      "path": "Script/Core/DebugKit/System_DebugKit.lua",
+      "sha256": "b09780ae7aec992a76e92a2dc9f79a285e71906bbcffd812e3361b08ffc34545"
+    },
+    {
+      "path": "Script/Core/EventSystem/UGCEventSystem.lua",
+      "sha256": "9364b18785c5fa61ea25e08fe290d0ffa7fe1d3345b658fee37821385f403276",
+      "sourceSha256": "653d9f20a2d70b4b7b6d277e902aad1c441987e223a10a7c1bfada8f8620af69"
+    },
+    {
+      "path": "Script/Core/UISystem/Global_UI.lua",
+      "sha256": "3320aa45710119fe73ceb26168058305f3eddf76df1a2a8cefec8fe76e72a5ba",
+      "sourceSha256": "e02250cc53bab3b5f84bd05a1ea6510f22641a2cd7e3242d33bff903cdb84eb5"
+    },
+    {
+      "path": "Script/Core/UISystem/Sys_UIManager.lua",
+      "sha256": "f83a4864b28521c3d0313db3c35e0b7048b8c1d0f702aed0a716a15c2715ce95",
+      "sourceSha256": "d53a9f862775d73074f59d07075679894b9684b1872b6ca800527d3f9126e3c5"
+    },
+    {
+      "path": "Script/Core/TipSystem/Global_Tip.lua",
+      "sha256": "43f5f5c2fdf29a69008965af76c066ffa65c0b6d8a95340f7e183c6129a6b197"
+    },
+    {
+      "path": "Script/Core/TipSystem/Sys_TipQueueSystem.lua",
+      "sha256": "0710a26faba41c17741cd09c4b21902d876f704ddf8a642e356ff6eb0db3e478"
+    },
+    {
+      "path": "Script/Const/Core/Const_Tip.lua",
+      "sha256": "1527bf2eb6472a934e3ff5c08c182899eeb37e10d134aaf36d717b5a949f04d9"
+    },
+    {
+      "path": "Script/Core/CommandSystem/Global_CommandSystem.lua",
+      "sha256": "934067e18654b82fd93e07db9020ed209f7a31a8d63ec5438b986a29e492cfb5",
+      "sourceSha256": "a34d133187add93dcabb7dfe4da3e54186ad67bc5dcb9cbb1ae166461201acbd"
+    },
+    {
+      "path": "Script/Core/CommandSystem/System_CommandSystem.lua",
+      "sha256": "44d74314afae8af00ddadcce0d9bd293e856429c11fd32418e1cf2a3b83f1ab4"
+    },
+    {
+      "path": "Script/Core/CommandSystem/Config/Config_CommandSystem.lua",
+      "sha256": "fcdeafbbc89ea1e2dc2809dcaede5d74440848dfcc67d0a5cff72b2431cafd60"
+    },
+    {
+      "path": "Script/Core/CommandSystem/Interpreter/Interpreter_Default.lua",
+      "sha256": "bae883caa5f924e55015e4479dd2aaa4da90883a4611b7cb576801c8cff1d607"
+    },
+    {
+      "path": "Script/Setting/CommandConfigIndex.lua",
+      "sha256": "5eefdb1046090694a030636ff7b01fedf589105230a46c091f19c3061ef984cb"
+    },
+    {
+      "path": "Script/Core/AutoTestKit/Config/Config_AutoTestKit.lua",
+      "sha256": "6e10a7ce2cd84fbfeba1004e63d57911c4963468fcc4ee71a32a1db7eee9b9b9"
+    },
+    {
+      "path": "Script/Core/AutoTestKit/Global_AutoTestKit.lua",
+      "sha256": "d4fe3ed336190e3e6e3579f9ce06a96671ecfa1002a7674f38b9946592a17de9",
+      "sourceSha256": "ae38584a27e61b2d57c93ed6780dca9e6f9ff9956ee2e2b95646ab3bac2d5b0f"
+    },
+    {
+      "path": "Script/Core/AutoTestKit/System_AutoTestKit.lua",
+      "sha256": "fd442d1c6b2b8aa65e59c8a18171699ee31dfc89cfcf2a96e9e8dc902cf2e721",
+      "sourceSha256": "15286c18ccaf0f2e06f8ec912cebe8fa6197f4928b37d36c758af654d619f11f"
+    },
+    {
+      "path": "Script/Core/AutoTestKit/TestRunner/Assert.lua",
+      "sha256": "678d7b78e5ef73d627af0b4bfe4e8eb6eb9aae7abbe4615e790f88c95ba1dad7",
+      "sourceSha256": "a156ff5741d9af306ad1258552bd32b831202d8f905ea7191a2258bd4647edac"
+    },
+    {
+      "path": "Script/Core/AutoTestKit/TestRunner/TestManager.lua",
+      "sha256": "a23432841b45107995428abb45b9788cfd90377e1ba4c6d42d5e15958f26ec86",
+      "sourceSha256": "ab1ab7b65b6801966826c02920efa990bc8e7c5f52f088b645a1f0a184e05801"
+    },
+    {
+      "path": "Script/Setting/AutoTestSuiteIndex.lua",
+      "sha256": "1d793a0dfd9233dc2d966a433696fe79ee83a74a276f711433468315fcbcbc97"
+    },
+    {
+      "path": "Script/Event/EventType.lua",
+      "sha256": "7abcdb7f4fada2cde0a0e94996cd4980ec9077593748b909c7f18ccb28f5f0e6",
+      "sourceSha256": "8111369554b72cb65250c456074280626a663f80cd489805ed0094c87f9815b9"
+    },
+    {
+      "path": "Script/Event/Event_DataChange.lua",
+      "sha256": "b9aaa219df94b4d0f1274efe31c40ffcd5cb5f29c0f457c9bcb72e7eef95d06a",
+      "sourceSha256": "faede31643edcd1e9e37292c74afbcf76662d215936f5d3f022118abd2d3b2e7"
+    },
+    {
+      "path": "Script/Setting/Project_Globals.lua",
+      "sha256": "b5cff6b1f78c6a05e4178797c0abf21157f51667266b8d676dab32e5eec8cb71"
+    },
+    {
+      "path": "Script/Setting/Package_Registry.lua",
+      "sha256": "1cd0c3938e33504ef13952fb856ac3ec414757149a92029ca56f52a78366f5e7"
+    },
+    {
+      "path": "Script/Setting/Package_Meta_Index.lua",
+      "sha256": "8943bf0734eafad0873ee138574281f907744aaa20c1cff1bd817e249e900e85"
+    },
+    {
+      "path": "Script/Setting/Core_Registry.lua",
+      "sha256": "b8c3ccb3f671b5583218670e5d9a15673dbeb9f8f811cf7a51ffc15a59bc47ee"
+    },
+    {
+      "path": "Script/Setting/CommandList.lua",
+      "sha256": "be827d5b22d53cb09b5f9817901cbdf8c5cf1f895d31e645c41ef771e47f6227"
+    },
+    {
+      "path": "Script/Setting/DebugKitPrediction.lua",
+      "sha256": "9bc653445a0e0c59bcb41a2dd3e294c6521b12a128348def03b94fc35043e26d"
+    },
+    {
+      "path": "Script/Const/Data/Const_Data.lua",
+      "sha256": "cf8d14df6193a1465884eec2a7182d6c7529ef39f6737423a6c0738d0599e846"
+    },
+    {
+      "path": "Script/Setting/GenKit_Config.lua",
+      "sha256": "1ca9ce65cdf0958e6328ea5aaa03a8ff4cbbb2f6c4ea192c8a2fe1d3b3b1d90b"
+    },
+    {
+      "path": "Script/Core/GameDataCore/Global_GameDataCore.lua",
+      "sha256": "a2e7b3ea7007fda8d05a639e51a16461dc6944fc192971d4d16c109d08cf131e"
+    },
+    {
+      "path": "Script/Core/GameDataCore/System_GameDataCore.lua",
+      "sha256": "bd98cd6eae256c84aaa0ffa61d2a1b7b534639697d3dbee7e6d0e372bd2b8133",
+      "sourceSha256": "141ed83f6b3a3c45e096c62aeee80fd50095c954688c74f3a08d97ffca3583ba"
+    },
+    {
+      "path": "Script/Core/PlayerDataCore/Global_PlayerDataCore.lua",
+      "sha256": "f0456acc7a1ffcc38b8ad6912aa965a253f0301cef9f4cee64db70b1e8c0a4e2"
+    },
+    {
+      "path": "Script/Core/PlayerDataCore/System_PlayerDataCore.lua",
+      "sha256": "147fafa44073b119e0aeb31b8cec6a47d3f0740f1b5dcbc331ab24c374de457d",
+      "sourceSha256": "73be6e198970b7b3a39efc1f85abc758e22ccb21ff893391b8550e4118b4238b"
+    },
+    {
+      "path": "Script/Core/LifeCycle/Life_Cycle.lua",
+      "sha256": "b1253243ac2ce4e220e8ccb82852b931256745f9cca6155b2f08bc95cd078e8b",
+      "sourceSha256": "fc563023ed4de8baad2fded809a32c0bd93285e0e566534281f627c8c4f2599e"
+    },
+    {
+      "path": "Script/Blueprint/Component/BP_PlayerPropertyComponent.lua",
+      "sha256": "826696f04c0b290e5f91a17ec265d610b6ded3125d3bc009717bc2dfe4706f90"
+    }
+  ],
+  "deferredModules": [],
+  "reservedDirectories": [
+    "Script/Blueprint",
+    "Script/Event",
+    "Script/Config",
+    "Asset",
+    "Script/Config/Command",
+    "Script/Config/AutoTestSuite",
+    "Script/Package"
+  ],
+  "integrationRequirements": [
+    "部署前先只读预检目标工程、Lua 环境、MCP 实际连接与工程一致性、入口及冲突，展示结果与完整计划并等待用户明确二次确认；确认前不得写出文件、创建保存资产、运行生成器写出或启动/停止 PIE。",
+    "初始化只有完整接入流程：部署必需文件、JSON UI 表、属性组件、四个实际入口、目标生成清单，并完成本次 PIE 验收；GM、AttributeSystem 与 SkillSystem 独立可选。",
+    "四个 entryScriptDefinitions 均为必需步骤；根据 .ugcproj 与 GameMode CDO 定位实际类及 Lua 绑定，备份默认脚本后同步，已有业务代码须保留并合并。",
+    "启动入口显式加载 EventType、EventSystem 和 LifeCycle；八个 Global Core 由目标 Core_Registry 启动，LifeCycle 不加入该清单。",
+    "GameState 只通过 LifeCycle.Tick 驱动 Core 与 Package.GameStateTick；PC 驱动 Package.PlayerTick，并接入 PC/Pawn 创建和退出，禁止重复旧 Tick。",
+    "按 JSON 创建目标本地 UI 表及结构体；空表合法，已有匹配表保留行，冲突资产不重绑 RowStruct。",
+    "按 JSON 用编辑器创建属性组件蓝图，关联 Lua 并唯一挂载实际控制器；不复制来源 ConditionData 业务组件。",
+    "PropertyComponent 遵守存档三态，数据成功后通知 LifeCycle；无数据声明时跳过存档并通知就绪，读取错误不得初始化或覆盖存档。",
+    "在本次目标运行 GenKit，生成 Core、Package、Meta、指令与测试索引、数据常量；有业务数据声明时生成分类事件。空种子不得作为已有 Core 的最终注册结果。",
+    "保留 GenKit_Config 手工输入及已有业务事件；空数据、空指令、空 Suite 合法，不要求 CSV。",
+    "客户端 Tip 与 AutoTestKit Tick 由完整入口驱动；可选 GM 提供命令与通知 RPC，未安装 GM 不影响框架启动。",
+    "选装 GM 时部署独立包、控件及 UI 登记行、控制器薄适配，并将其包和命令纳入实际生成结果。",
+    "本次新启动 PIE 验证两端框架、组件、玩家/Pawn 和 Tick；选装 GM 时验证 UI、RPC 和开关，历史验收不能代替本次结果。",
+    "运行验收后停止 PIE、恢复临时索引并移除临时探针；缺少必需步骤应报告部署未完成，没有另一种部分成功模式。"
+  ],
+  "dataTableDefinitions": [
+    {
+      "table": "DT_UI_Config",
+      "schema": "Definitions/DataTables/DT_UI_Config.schema.json",
+      "schemaSha256": "fd002c721d8ae745912a678bf7890519f6c87699995d9b8525b7516e82c0d06d",
+      "mode": "empty",
+      "editorHelper": "PackageKit/editor/data_table_schema.py",
+      "editorHelperBase": "toolRoot",
+      "generatedAssets": [
+        "Asset/Data/Table/Customized/DT_UI_Config.uasset",
+        "Asset/Data/Table/Customized/UGCTemplateRowStruct_DT_UI_Config.uasset"
+      ],
+      "deployment": "oasis-project-deploy"
+    }
+  ],
+  "eventDefinitions": [
+    {
+      "path": "Script/Event/EventType.lua",
+      "loadModule": "Script.Event.EventType",
+      "exportedGlobal": "EventType",
+      "notes": "十三个通用事件，保留来源编号与 Plaer 拼写；新增 FrameworkReady、PC_End 和客户端本地 PC/Pawn 就绪事件。Server_OnGameInit 为无参数兼容通知，不代表地图加载完成。"
+    },
+    {
+      "path": "Script/Event/Event_DataChange.lua",
+      "loadModule": "Script.Event.Event_DataChange",
+      "notes": "初始仅含 ON_PLAYER_DATA_CHANGE=5000 与 ON_GAME_DATA_CHANGE=5001；后续由目标项目 GenKit 生成分类事件，保留 5000–5999 范围。"
+    }
+  ],
+  "initializationSeeds": [
+    {
+      "path": "Script/Setting/Project_Globals.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeProjectGlobalsConfirm"
+    },
+    {
+      "path": "Script/Setting/Package_Registry.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writePackageRegistry"
+    },
+    {
+      "path": "Script/Setting/Package_Meta_Index.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writePackageMetaIndex"
+    },
+    {
+      "path": "Script/Setting/Core_Registry.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeCoreRegistry"
+    },
+    {
+      "path": "Script/Setting/CommandConfigIndex.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeCommandConfigIndex"
+    },
+    {
+      "path": "Script/Setting/CommandList.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeCommandList"
+    },
+    {
+      "path": "Script/Setting/DebugKitPrediction.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeDebugKitPrediction"
+    },
+    {
+      "path": "Script/Setting/AutoTestSuiteIndex.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeAutoTestSuiteIndex"
+    },
+    {
+      "path": "Script/Const/Data/Const_Data.lua",
+      "kind": "generated-empty",
+      "generator": "GenKit/init.lua:writeConstData"
+    },
+    {
+      "path": "Script/Setting/GenKit_Config.lua",
+      "kind": "project-configuration",
+      "notes": "手工维护 additionalPlayerDataKeys 和 tableConsts，初始均为空数组。"
+    }
+  ],
+  "startupValidation": {
+    "generatorTest": "GenKit/Tests/Test_LifecycleRegistries.lua",
+    "generatorChecksPassed": 17,
+    "templateTest": "Tests/Test_LifeCycle.lua",
+    "templateChecksPassed": 31,
+    "runtimeVerified": true,
+    "generatorTestBase": "toolRoot",
+    "runtimeScope": "single-player empty-configuration bootstrap, module probes, actual respawn, explicit exit cleanup",
+    "engineTarget": "TempleTest",
+    "engineDebugId": "_dkfy0shtqkcqjj",
+    "engineChecksPassed": 49,
+    "clientChecksPassed": 25,
+    "serverChecksPassed": 24,
+    "isolatedChecksPassed": 115,
+    "report": "../../Docs/framework/Template_Startup_Verification.md"
+  },
+  "entryScriptDefinitions": [
+    {
+      "role": "GameMode",
+      "template": "Project/Script/Blueprint/UGCGameMode.lua",
+      "sha256": "9df0bfa5f661414ac30d8d5558842dab8264501f5e04f53facc369efcac83693",
+      "deployment": "editor-binding",
+      "targetResolution": "editor-binding",
+      "validation": {
+        "engineTarget": "TempleTest",
+        "runtimeVerified": true,
+        "scope": "existing editor bindings, empty data declarations"
+      },
+      "required": true
+    },
+    {
+      "role": "GameState",
+      "template": "Project/Script/Blueprint/UGCGameState.lua",
+      "sha256": "72832f9384c9a42b356dc721780f6a736f7e83991418c79380c7b58ffce08155",
+      "deployment": "editor-binding",
+      "targetResolution": "editor-binding",
+      "projectProvidedDependencies": [
+        "Script/Common/ue_enum_custom.lua"
+      ],
+      "validation": {
+        "engineTarget": "TempleTest",
+        "runtimeVerified": true,
+        "scope": "existing editor bindings, empty data declarations"
+      },
+      "required": true
+    },
+    {
+      "role": "PlayerController",
+      "template": "Project/Script/Blueprint/UGCPlayerController.lua",
+      "sha256": "3a7b400b8c1d97a3b07b379b7fdc7e5fd999df83265a9f80fbf7c24ce41424bb",
+      "deployment": "editor-binding",
+      "targetResolution": "editor-binding",
+      "validation": {
+        "engineTarget": "TempleTest",
+        "runtimeVerified": true,
+        "scope": "existing editor bindings, empty data declarations"
+      },
+      "required": true
+    },
+    {
+      "role": "Pawn",
+      "template": "Project/Script/Blueprint/UGCPlayerPawn.lua",
+      "sha256": "adb3e2a419cdfc1f4dbb49f9064edf1fb63a12009e7793fc62d4a14eeeb38197",
+      "deployment": "editor-binding",
+      "targetResolution": "editor-binding",
+      "validation": {
+        "engineTarget": "TempleTest",
+        "runtimeVerified": true,
+        "scope": "existing editor bindings, empty data declarations"
+      },
+      "required": true
+    }
+  ],
+  "componentDefinitions": [
+    {
+      "definition": "Definitions/Components/BP_PlayerPropertyComponent.json",
+      "definitionSha256": "0d2c13748e7192f25ae062bbd287b25840a4e841c86f702ae0c7781ec49dd0ab",
+      "editorHelper": "PackageKit/editor/blueprint_components.py",
+      "editorHelperBase": "toolRoot",
+      "deployment": "oasis-project-deploy",
+      "targetRole": "PlayerController",
+      "validation": {
+        "test": "Tests/Test_PlayerPropertyComponent.lua",
+        "checksPassed": 15,
+        "engine": "mocked",
+        "runtimeVerified": true,
+        "editorAssetVerified": true,
+        "editorTarget": "TempleTest",
+        "verifiedOperations": [
+          "create",
+          "compile",
+          "save",
+          "lua-association",
+          "attach-generated-class",
+          "repeat-matched"
+        ],
+        "runtimeScope": "owner-filtered empty-data startup, respawn preservation, explicit EndPlay cleanup"
+      }
+    }
+  ],
+  "optionalTemplates": [
+    {
+      "name": "framework-gm",
+      "manifest": "../framework-gm/manifest.json",
+      "defaultInstall": false
+    },
+    {
+      "name": "framework-attribute",
+      "manifest": "../framework-attribute/manifest.json",
+      "defaultInstall": false
+    },
+    {
+      "name": "framework-skill",
+      "manifest": "../framework-skill/manifest.json",
+      "defaultInstall": false
+    }
+  ],
+  "initializationMode": "complete",
+  "requiresPreflightConfirmation": true
+}

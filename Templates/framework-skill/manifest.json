@@ -1,0 +1,77 @@
+{
+  "name": "framework-skill",
+  "version": "0.1.0-draft",
+  "optional": true,
+  "requires": [
+    "framework-base"
+  ],
+  "sourceProject": "DayBreakDefenseDemoV1",
+  "contentRoot": "Project",
+  "description": "SkillSystem 可选空包；无默认技能或资源，提供技能注册、持久化状态、实例管理与重生恢复。",
+  "files": [
+    {
+      "path": "Script/Package/SkillSystem/Data/Define_Skill.lua",
+      "sha256": "3b7a205d1ac87836ae4da0b6f226ab87dfea047f38903044e39515ef94436309",
+      "sourceSha256": "d4c5ed59fdfe3bc8fec768b1adc3b611726a663a7bca46299f75bd97409f09c5"
+    },
+    {
+      "path": "Script/Package/SkillSystem/Data/PlayerData_Skill.lua",
+      "sha256": "b3f750bf50691eaa06aaa714dc647a4b178f56cd8865aa400501dab8f900fc8d",
+      "sourceSha256": "bd34fdcdbccf92e351dc7ed372920998e082153fcf1d04c14545930a2c379221"
+    },
+    {
+      "path": "Script/Package/SkillSystem/Package_Meta.lua",
+      "sha256": "54558773fa174a0678d5257ec84f8f500d739c51a5d3a96c419c78afea4e971e",
+      "sourceSha256": "54558773fa174a0678d5257ec84f8f500d739c51a5d3a96c419c78afea4e971e"
+    },
+    {
+      "path": "Script/Package/SkillSystem/Query/Query_Skill.lua",
+      "sha256": "873323a377f18ac37497b8b09d9070911436b732ee4d5e5dbf5b78a5bf764afd",
+      "sourceSha256": "35e8ea3b7cd30592606279bd6de2c17ee29fa8955a3501debddc33caa9cbbc54"
+    },
+    {
+      "path": "Script/Package/SkillSystem/Registry_SkillSystem.lua",
+      "sha256": "b47c5a5a565a465f2bb3d24d4b768b2de52233a24d64769f6ad38b7aad6b066d",
+      "sourceSha256": "0a2d19735f433d584445c8db3bd5050bcdc46083c1170fe34df315df03a81126"
+    },
+    {
+      "path": "Script/Package/SkillSystem/System/System_Skill.lua",
+      "sha256": "9f1a2330f93f2a34bdc2254ed67dc00ee9015911059eee010f6b3d2c164b91e8",
+      "sourceSha256": "17d5b7ff43f6a2cf17b9fbd7df5d460e4b5bc168f70eb01936d05acfc30d4d47"
+    }
+  ],
+  "registration": {
+    "mode": "business-package-registration",
+    "defaultSkills": []
+  },
+  "playerDataKeys": [
+    "skill_data"
+  ],
+  "generateIndexes": [
+    "Package_Registry",
+    "Package_Meta_Index",
+    "Const_Data",
+    "Event_DataChange"
+  ],
+  "conditionalEngineRequirements": [
+    "Registered skills require valid target project skill blueprints and Pawn new-skill component support; empty skill list does not invoke skill APIs."
+  ],
+  "integrationRequirements": [
+    "与 GM、AttributeSystem 独立选装，默认不安装；部署前展示目标、MCP、环境和计划并等待用户确认。",
+    "只复制六个 Lua，不迁入来源技能 ID、蓝图、业务 Suite 或资源；不改通用 Core 或 PropertyComponent。",
+    "skill_data 默认空表，纳入现有存档和复制流程；安装后不能按零数据包跳过存档。",
+    "生成 SKILL_DATA 数据常量、分类变更事件及包和 Meta 索引；实际控制器按生成常量复制字段。",
+    "服务端监听数据完成及 Server_OnPlayerPawnInit 权威事件，监听失败回滚并支持重试。",
+    "迁移保存失败保留 pendingSave，使用 SyncPlayer 显式重试；GetStatus 检查包同步结果。",
+    "配置技能时额外核对相对类路径、目标蓝图、技能引擎 API 和 Pawn 技能组件，不猜测或自动创建业务资产。",
+    "本次目标必须新 PIE 验收；空包启动不等于实际技能效果、持久化或断线验证通过。"
+  ],
+  "validation": {
+    "isolatedTest": "Tests/Test_SkillSystem.lua",
+    "checksPassed": 29,
+    "engine": "mocked",
+    "runtimeVerified": false,
+    "generation": "actual GenKit scan and in-memory output",
+    "notes": "Includes actual template PlayerDataCore, LifeCycle, PropertyComponent, respawn, controller replication and empty AttributeSystem coexistence; no project deployment."
+  }
+}

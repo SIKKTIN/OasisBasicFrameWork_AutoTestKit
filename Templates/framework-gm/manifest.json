@@ -1,0 +1,87 @@
+{
+  "name": "framework-gm",
+  "version": "0.1.0-draft",
+  "optional": true,
+  "requires": [
+    "framework-base"
+  ],
+  "contentRoot": "Project",
+  "files": [
+    {
+      "path": "Script/Config/Command/Config_Command_GM.lua",
+      "sha256": "7250cb928ed0a648d9946e4d8fbc957ec54ea8c1a4dd6d4bd9dd3783813eea82"
+    },
+    {
+      "path": "Script/Package/GM/Config/Config_GM.lua",
+      "sha256": "4f0d4c8a3db3b8521c09a3ad792706af6a2965ea56f701e890013bc6bfa39280"
+    },
+    {
+      "path": "Script/Package/GM/Controller_GM.lua",
+      "sha256": "b5bae3788b6e3a489815d8f1db528ca8b1575c58c47dec4a7b5ac90c3555c3a1"
+    },
+    {
+      "path": "Script/Package/GM/Package_Meta.lua",
+      "sha256": "dbe7f1bf853c5969a896f85a65fa4c2f84d2bebbd729696c805caa1815848226"
+    },
+    {
+      "path": "Script/Package/GM/README.md",
+      "sha256": "0fbee215cdced49341efd8d3e4b56f48103b1cdd664e5812c18061f20c71593b"
+    },
+    {
+      "path": "Script/Package/GM/Registry_GM.lua",
+      "sha256": "401a04ce2af42af61a7510f92b5b03b96fb4960d7faad4e09b6fa210b78c45a9"
+    },
+    {
+      "path": "Script/Package/GM/System/System_GM.lua",
+      "sha256": "e94c0303d8c8a06690e2c7528c986b47a9bccdc7966fd37c3d3672ab4cd45182"
+    },
+    {
+      "path": "Script/UI/GM/UMG_GMControl.lua",
+      "sha256": "5c0fb5edfec7166e475518f04ea3afa350c3012621c4fbfff2db25cc0d86f85a"
+    }
+  ],
+  "widget": {
+    "path": "Asset/UI/GM/UMG_GMControl.uasset",
+    "sha256": "72dc8721160600ac9a88465e5b2abe17e9997a5e2fc760c25dc97f74a2d584d4",
+    "editorHelper": "PackageKit/editor/gm_template.py",
+    "deployment": "copy-compile-save",
+    "notes": "UMG only; no DataTable or source business assets. Compilation relocates the widget to the target mount."
+  },
+  "uiDefinition": {
+    "path": "Definitions/UI/GM.json",
+    "sha256": "547d80efbdc8c1ab16c2a76c66088d61ecbc2076763d0aa5ce0f5e170db8dd74",
+    "mode": "merge-preserve-conflicts"
+  },
+  "controllerAdapter": {
+    "module": "Script.Package.GM.Controller_GM",
+    "call": "require(\"Script.Package.GM.Controller_GM\").Attach(UGCPlayerController)",
+    "placement": "before final return of actual bound PlayerController; preserve existing methods; same-name RPC conflict rejects"
+  },
+  "generateIndexes": [
+    "Package_Registry",
+    "Package_Meta_Index",
+    "CommandConfigIndex",
+    "CommandList"
+  ],
+  "validation": {
+    "isolatedTest": "Tests/Test_GM.lua",
+    "checksPassed": 17,
+    "runtimeVerified": true,
+    "editorRowTests": {
+      "test": "Tests/Test_GMEditor.py",
+      "passed": 6
+    },
+    "notes": "Final clean startup verified controller exit stops active owned tests and preserves completed reports; PIE stopped and temporary suites removed.",
+    "engineTarget": "TempleTest",
+    "engineDebugId": "_dkfy0shtqkgfpy",
+    "engineChecksPassed": 25,
+    "clientChecksPassed": 16,
+    "serverChecksPassed": 9,
+    "featureSession": {
+      "debugId": "_dkfy0shtqkfouj",
+      "checksPassed": 27,
+      "scope": "full GM feature checks before follow-up method hot reload; seven-case queue passed"
+    },
+    "report": "../../Docs/framework/GM_Integration_Verification.md"
+  }
+}

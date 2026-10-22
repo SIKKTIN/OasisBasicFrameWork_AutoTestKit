@@ -1,0 +1,82 @@
+# UKismetStringLibrary
+
+> 在线文档: [https://developer.gp.qq.com/api/#/searchContent/UKismetStringLibrary?classDetailShow=true&path=class%2Fdetail%2FOthers%2FUKismetStringLibrary.json&isSelect=1&apiEnc=%5B%22%E7%B1%BB%22%5D&apiLabel=UKismetStringLibrary](https://developer.gp.qq.com/api/#/searchContent/UKismetStringLibrary?classDetailShow=true&path=class%2Fdetail%2FOthers%2FUKismetStringLibrary.json&isSelect=1&apiEnc=%5B%22%E7%B1%BB%22%5D&apiLabel=UKismetStringLibrary)
+
+类
+
+全文搜索
+
+---
+
+
+## 函数
+
+- **StringConv_FloatToString**(floatInFloat) — Converts a float value to a string
+- **StringConv_IntToString**(int32InInt) — Converts an integer value to a string
+- **StringConv_Int64ToString**(int64InInt64) — Converts an integer64 value to a string
+- **StringConv_UInt64ToString**(uint64InUInt64) — Converts an uinteger64 value to a string
+- **StringConv_ByteToString**(uint8InByte) — Converts a byte value to a string
+- **StringConv_BoolToString**(boolInBool) — Converts a boolean value to a string, either 'true' or 'false'
+- **StringConv_VectorToString**(FVectorInVec) — Converts a vector value to a string, in the form 'X= Y= Z='
+- **StringConv_IntVectorToString**(FIntVectorInIntVec) — Converts an IntVector value to a string, in the form 'X= Y= Z='
+- **StringConv_Vector2dToString**(FVector2DInVec) — Converts a vector2d value to a string, in the form 'X= Y='
+- **StringConv_RotatorToString**(FRotatorInRot) — Converts a rotator value to a string, in the form 'P= Y= R='
+- **StringConv_TransformToString**(FTransform &InTrans) — Converts a transform value to a string, in the form 'Translation: X= Y= Z= Rotation: P= Y= R= Scale: X= Y= Z='
+- **StringConv_ObjectToString**(UObject *InObj) — Converts a UObject value to a string by calling the object's GetName method
+- **StringConv_ColorToString**(FLinearColorInColor) — Converts a linear color value to a string, in the form '(R=,G=,B=,A=)'
+- **StringConv_DateTimeToString**(FDateTimeInDateTime) — Converts a date time value to a string, in the form '%Y.%m.%d-%H.%M.%S'
+- **StringConv_NameToString**(FNameInName) — Converts a name value to a string
+- **NameConv_StringToName**(FString &InString) — Converts a string to a name value
+- **Conv_StringToInt**(FString &InString) — Converts a string to a int value
+- **Conv_StringToInt64**(FString &InString) — Converts a string to a int64 value
+- **Conv_StringToFloat**(FString &InString) — Converts a string to a float value
+- **Conv_StringToVector**(FString& InString, FVector& OutConvertedVector, bool &OutIsValid) — Convert String Back To Vector. IsValid indicates whether or not the string could be successfully converted.
+- **Conv_StringToVector2D**(FString& InString, FVector2D& OutConvertedVector2D, bool &OutIsValid) — Convert String Back To Vector2D. IsValid indicates whether or not the string could be successfully converted.
+- **Conv_StringToRotator**(FString& InString, FRotator& OutConvertedRotator, bool &OutIsValid) — Convert String Back To Rotator. IsValid indicates whether or not the string could be successfully converted.
+- **Conv_StringToColor**(FString& InString, FLinearColor& OutConvertedColor, bool &OutIsValid) — Convert String Back To Color. IsValid indicates whether or not the string could be successfully converted.
+- **StringBuildString_Float**(FString& AppendTo, FString& Prefix, float InFloat, FString &Suffix) — Converts a float->string, create a new string in the form AppendTo+Prefix+InFloat+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string pa
+- **StringBuildString_Int**(FString& AppendTo, FString& Prefix, int32 InInt, FString &Suffix) — Converts a int->string, creating a new string in the form AppendTo+Prefix+InInt+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string para
+- **StringBuildString_Int64**(FString& AppendTo, FString& Prefix, int64 InInt64, FString &Suffix) — Converts a int->string, creating a new string in the form AppendTo+Prefix+InInt+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string para
+- **StringBuildString_Bool**(FString& AppendTo, FString& Prefix, bool InBool, FString &Suffix) — Converts a boolean->string, creating a new string in the form AppendTo+Prefix+InBool+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string
+- **StringBuildString_Vector**(FString& AppendTo, FString& Prefix, FVector InVector, FString &Suffix) — Converts a vector->string, creating a new string in the form AppendTo+Prefix+InVector+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo strin
+- **StringBuildString_IntVector**(FString& AppendTo, FString& Prefix, FIntVector InIntVector, FString &Suffix) — Converts an IntVector->string, creating a new string in the form AppendTo+Prefix+InIntVector+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendT
+- **StringBuildString_Vector2d**(FString& AppendTo, FString& Prefix, FVector2D InVector2d, FString &Suffix) — Converts a vector2d->string, creating a new string in the form AppendTo+Prefix+InVector2d+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo s
+- **StringBuildString_Rotator**(FString& AppendTo, FString& Prefix, FRotator InRot, FString &Suffix) — Converts a rotator->string, creating a new string in the form AppendTo+Prefix+InRot+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string
+- **StringBuildString_Object**(FString& AppendTo, FString& Prefix, UObject* InObj, FString &Suffix) — Converts a object->string, creating a new string in the form AppendTo+Prefix+object name+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo st
+- **StringBuildString_Color**(FString& AppendTo, FString& Prefix, FLinearColor InColor, FString &Suffix) — Converts a color->string, creating a new string in the form AppendTo+Prefix+InColor+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string
+- **StringBuildString_Name**(FString& AppendTo, FString& Prefix, FName InName, FString &Suffix) — Converts a color->string, creating a new string in the form AppendTo+Prefix+InName+Suffix return -A new string built from the passed parameters params AppendTo -- An existing string to use as the start of the conversion string params Prefix -- A string to use as a prefix, after the AppendTo string p
+- **StringConcat_StrStr**(FString& A, FString &B) — Concatenates two strings together to make a new string return - A new string which is the concatenation of A+B params A -- The original string params B -- The string to append to A
+- **EqualEqual_StrStr**(FString& A, FString &B) — Test if the input strings are equal (A == B) return - True if the strings are equal, false otherwise params A -- The string to compare against params B -- The string to compare
+- **EqualEqual_StriStri**(FString& A, FString &B) — Test if the input strings are equal (A == B), ignoring case return - True if the strings are equal, false otherwise params A -- The string to compare against params B -- The string to compare
+- **NotEqual_StrStr**(FString& A, FString &B) — Test if the input string are not equal (A != B) return -Returns true if the input strings are not equal, false if they are equal params A -- The string to compare against params B -- The string to compare
+- **NotEqual_StriStri**(FString& A, FString &B) — Test if the input string are not equal (A != B), ignoring case differences return -Returns true if the input strings are not equal, false if they are equal params A -- The string to compare against params B -- The string to compare
+- **Len**(FString &S) — Returns the number of characters in the string return -The number of chars in the string
+- **StringGetSubstring**(FString& SourceString, int32 StartIndex, int32Length) — Returns a substring from the string starting at the specified position return -The requested substring params SourceString -- The string to get the substring from params StartIndex -- The location in SourceString to use as the start of the substring params Length -The length of the requested substri
+- **FindSubstring**(FString& SearchIn, FString& Substring, bool bUseCase, bool bSearchFromEnd, int32StartPosition) — Finds the starting index of a substring in the a specified string return -The index (starting from 0 if bSearchFromEnd is false) of the first occurence of the substring params SearchIn -The string to search within params Substring -The string to look for in the SearchIn string params bUseCase -Wheth
+- **Contains**(FString& SearchIn, FString& Substring, bool bUseCase, boolbSearchFromEnd) — Returns whether this string contains the specified substring. return - Returns whether the string contains the substring
+- **GetCharacterAsNumber**(FString& SourceString, int32Index) — Gets a single character from the string (as an integer) return -The integer value of the character or 0 if index is out of range params SourceString -- The string to convert params Index -- Location of the character whose value is required
+- **ParseIntoArray**(FString& SourceString, FString& Delimiter, boolCullEmptyStrings) — Gets an array of strings from a source string divided up by a separator and empty strings can optionally be culled. return -The array of string that have been separated params SourceString -- The string to chop up params Delimiter -- The string to delimit on params CullEmptyStrings -= true - Cull (t
+- **StringJoinStringArray**(TArray < FString >& SourceArray, FString &Separator) — Concatenates an array of strings into a single string. return -The final, joined, separated string. params SourceArray -- The array of strings to concatenate. params Separator -- The string used to separate each element.
+- **GetCharacterArrayFromString**(FString &SourceString) — Returns an array that contains one entry for each character in SourceString return -An array containing one entry for each character in SourceString params SourceString -The string to break apart into characters
+- **StringToUpper**(FString &SourceString) — Returns a string converted to Upper case return -The string in upper case params SourceString -The string to convert
+- **StringToLower**(FString &SourceString) — Returns a string converted to Lower case return -The string in lower case params SourceString -The string to convert
+- **StringLeftPad**(FString& SourceString, int32ChCount) — Pad the left of this string for a specified number of characters return -The padded string params SourceString -The string to pad params ChCount - Amount of padding required
+- **StringRightPad**(FString& SourceString, int32ChCount) — Pad the right of this string for a specified number of characters return -The padded string params SourceString -The string to pad params ChCount - Amount of padding required
+- **IsNumeric**(FString &SourceString) — Checks if a string contains only numeric characters return -true if the string only contains numeric characters params SourceString -The string to check
+- **StartsWith**(FString& SourceString, FString& InPrefix, ESearchCase :: TypeSearchCase) — Test whether this string starts with given string. return -true if this string begins with specified text, false otherwise params SearchCase -Indicates whether the search is case sensitive or not ( defaults to ESearchCase::IgnoreCase )
+- **EndsWith**(FString& SourceString, FString& InSuffix, ESearchCase :: TypeSearchCase) — Test whether this string ends with given string. return -true if this string ends with specified text, false otherwise params SearchCase -Indicates whether the search is case sensitive or not ( defaults to ESearchCase::IgnoreCase )
+- **MatchesWildcard**(FString& SourceString, FString& Wildcard, ESearchCase :: TypeSearchCase) — Searches this string for a given wild card return -true if this string matches the ?-type wildcard given. params Wildcard -?-type wildcard params SearchCase -Indicates whether the search is case sensitive or not ( defaults to ESearchCase::IgnoreCase )
+- **StringTrim**(FString &SourceString) — Removes whitespace characters from the front of this string.
+- **StringTrimTrailing**(FString &SourceString) — Removes trailing whitespace characters
+- **CullArray**(FString& SourceString, TArray < FString > &InArray) — Takes an array of strings and removes any zero length entries. return -The number of elements left in InArray params InArray -The array to cull
+- **StringReverse**(FString &SourceString) — Returns a copy of this string, with the characters in reverse order
+- **StringReplace**(FString& SourceString, FString& From, FString& To, ESearchCase :: TypeSearchCase) — Replace all occurrences of a substring in this string return -a copy of this string with the replacement made params From -substring to replace params To -substring to replace From with params SearchCase -Indicates whether the search is case sensitive or not ( defaults to ESearchCase::IgnoreCase )
+- **ReplaceInline**(FString& SourceString, FString& SearchText, FString& ReplacementText, ESearchCase :: TypeSearchCase) — Replace all occurrences of SearchText with ReplacementText in this string. return -the number of occurrences of SearchText that were replaced. params SearchText -the text that should be removed from this string params ReplacementText -the text to insert in its place params SearchCase -Indicates whet
+- **Split**(FString& SourceString, FString& InStr, FString& LeftS, FString& RightS, ESearchCase :: Type SearchCase, ESearchDir :: TypeSearchDir) — Splits this string at given string position case sensitive. return -true if string is split, otherwise false params InStr -The string to search and split at params LeftS -out the string to the left of InStr, not updated if return is false params RightS -out the string to the right of InStr, not upda
+- **StringLeft**(FString& SourceString, int32Count) — return -the left most given number of characters
+- **StringLeftChop**(FString& SourceString, int32Count) — return -the left most characters from the string chopping the given number of characters from the end
+- **StringRight**(FString& SourceString, int32Count) — return -the string to the right of the specified location, counting back from the right (end of the word).
+- **StringRightChop**(FString& SourceString, int32Count) — return -the string to the right of the specified location, counting forward from the left (from the beginning of the word).
+- **StringMid**(FString& SourceString, int32 Start, int32Count) — return -the substring from Start position for Count characters.
+- **StringTimeSecondsToString**(floatInSeconds) — Convert a number of seconds into minutes:seconds.milliseconds format string
+- **StringTimeSecondsToStringSec**(floatInSeconds) — Convert a number of seconds into minutes:seconds Conv_FloatToString Conv_IntToString Conv_Int64ToString Conv_UInt64ToString Conv_ByteToString Conv_BoolToString Conv_VectorToString Conv_IntVectorToString Conv_Vector2dToString Conv_RotatorToString Conv_TransformToString Conv_ObjectToString Conv_ColorT

@@ -1,0 +1,2 @@
+# Template manifests verify exact file bytes; keep payloads and definitions unchanged.
+Templates/** -text

@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "table": "DT_UI_Config",
+  "assetPath": "Asset/UI/GM/UMG_GMControl.uasset",
+  "luaPath": "Script/UI/GM/UMG_GMControl.lua",
+  "rowName": "1001",
+  "row": {
+    "Name": "GM",
+    "AssetPath": "Asset/UI/GM/UMG_GMControl.UMG_GMControl_C",
+    "Zorder": "100",
+    "IsSingleton": true,
+    "Slot": "UI.UISlot.MainUISlot_High",
+    "IsPreLoad": false
+  }
+}

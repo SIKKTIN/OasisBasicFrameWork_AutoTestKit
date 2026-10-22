@@ -1,0 +1,1129 @@
+UGameplayStatics
+函数
+UObject *SpawnObject(TSubclassOf < UObject > ObjectClass, UObject *Outer)
+AActor *BeginSpawningActorFromBlueprint(UObject * WorldContextObject, UBlueprint * Blueprint, FTransform & SpawnTransform, boolbNoCollisionFail)
+生成指定蓝图类的实例，但不自动执行构造函数
+return  
+-Actor实例
+params WorldContextObject 
+-world上下文对象
+params Blueprint 
+-蓝图类
+params SpawnTransform 
+-生成Actor的Transform
+AActor *BeginSpawningActorFromClass(UObject * WorldContextObject, TSubclassOf < AActor > ActorClass, FTransform & SpawnTransform, bool bNoCollisionFail, AActor *Owner)
+AActor *BeginDeferredActorSpawnFromClass(UObject * WorldContextObject, TSubclassOf < AActor > ActorClass, FTransform & SpawnTransform, ESpawnActorCollisionHandlingMethod CollisionHandlingOverride, AActor *Owner)
+Spawns an instance of an actor class, but does not automatically run its construction script.
+AActor *FinishSpawningActor(AActor * Actor, FTransform &SpawnTransform)
+结束生成Actor，执行Actor的构造函数
+return  
+-Actor实例
+params Actor 
+-Actor实例
+params SpawnTransform 
+-生成Actor的Transform
+FVectorGetActorArrayAverageLocation(TArray < AActor * > &Actors)
+Find the average location (centroid) of an array of Actors
+voidGetActorArrayBounds(TArray < AActor * > & Actors, bool bOnlyCollidingComponents, FVector & Center, FVector &BoxExtent)
+Bind the bounds of an array of Actors
+voidGetAllActorsOfClass(UObject * WorldContextObject, TSubclassOf < AActor > ActorClass, TArray < AActor * > &OutActors)
+Find all Actors in the world of the specified class.
+This is a slow operation, use with caution e.g. do not use every frame.
+params ActorClass 
+-Class of Actor to find. Must be specified or result array will be empty.
+params OutActors 
+-Output array of Actors of the specified class.
+AActor *GetFirstActorOfClass(UObject * WorldContextObject, TSubclassOf < AActor >ActorClass)
+Find one Actor in the world of the specified class.
+This is a slow operation, use with caution e.g. do not use every frame.
+params ActorClass 
+-Class of Actor to find. Must be specified or result array will be empty.
+voidGetAllActorsWithInterface(UObject * WorldContextObject, TSubclassOf < UInterface > Interface, TArray < AActor * > &OutActors)
+Find all Actors in the world with the specified interface.
+This is a slow operation, use with caution e.g. do not use every frame.
+params Interface 
+-Interface to find. Must be specified or result array will be empty.
+params OutActors 
+-Output array of Actors of the specified interface.
+voidGetAllActorsWithTag(UObject * WorldContextObject, FName Tag, TArray < AActor * > &OutActors)
+获取拥有指定Tag的所有Actor
+params WorldContextObject 
+-world上下文对象
+params Tag 
+-Tag名称
+params OutActors 
+-输出的Actor列表
+UGameInstance *GetGameInstance(UObject *WorldContextObject)
+获取GameInstance
+return  
+-GameInstance
+params WorldContextObject 
+-world上下文对象
+UGameInstance *GetCurrentGameInstance()
+APlayerController *GetPlayerController(UObject * WorldContextObject, int32PlayerIndex)
+获取PlayerController
+return  
+-PlayerController
+params WorldContextObject 
+-world上下文对象
+APawn *GetPlayerPawn(UObject * WorldContextObject, int32PlayerIndex)
+获取PlayerPawn
+return  
+-PlayerPawn
+params WorldContextObject 
+-world上下文对象
+ACharacter *GetPlayerCharacter(UObject * WorldContextObject, int32PlayerIndex)
+获取PlayerCharacter
+return  
+-PlayerCharacter
+params WorldContextObject 
+-world上下文对象
+APlayerCameraManager *GetPlayerCameraManager(UObject * WorldContextObject, int32PlayerIndex)
+获取PlayerCameraManager
+return  
+-PlayerCameraManager
+params WorldContextObject 
+-world上下文对象
+APlayerController *CreatePlayer(UObject * WorldContextObject, int32 ControllerId, boolbSpawnPawn)
+Create a new player for this game.
+params ControllerId 
+-The ID of the controller that the should control the newly created player. A value of -1 specifies to use the next available ID
+params bSpawnPawn 
+-Whether a pawn should be spawned immediately. If false a pawn will not be created until transition to the next map.
+voidRemovePlayer(APlayerController * Player, boolbDestroyPawn)
+Removes a player from this game.
+params Player 
+- The player controller of the player to be removed
+params bDestroyPawn 
+-Whether the controlled pawn should be deleted as well
+int32GetPlayerControllerID(APlayerController *Player)
+Gets what controller ID a Player is using
+return  
+- The ID of the passed in player. -1 if there is no controller for the passed in player
+params Player 
+-The player controller of the player to get the ID of
+voidSetPlayerControllerID(APlayerController * Player, int32ControllerId)
+Sets what controller ID a Player should be using
+params Player 
+- The player controller of the player to change the controller ID of
+params ControllerId 
+-The controller ID to assign to this player
+voidLoadStreamLevel(UObject * WorldContextObject, FName LevelName, bool bMakeVisibleAfterLoad, bool bShouldBlockOnLoad, FLatentActionInfoLatentInfo)
+加载子关卡
+params WorldContextObject 
+-world上下文对象
+params LevelName 
+-子关卡名称
+params bMakeVisibleAfterLoad 
+-加载后是否显示
+params bShouldBlockOnLoad 
+-加载时是否阻塞
+params LatentInfo 
+-回调信息结构
+voidUnloadStreamLevel(UObject * WorldContextObject, FName LevelName, FLatentActionInfoLatentInfo)
+加载子关卡
+params WorldContextObject 
+-world上下文对象
+params LevelName 
+-子关卡名称
+params LatentInfo 
+-回调信息结构
+ULevelStreaming *GetStreamingLevel(UObject * WorldContextObject, FNamePackageName)
+Returns level streaming object with specified level package name
+voidFlushLevelStreaming(UObject *WorldContextObject)
+刷新关卡流，直到所有子关卡加载完毕时返回
+params WorldContextObject 
+-world上下文对象
+voidFlushLevelStreamingBasedOnCharacterLocation(UObject * WorldContextObject, FVectorCharacterLocation)
+更新玩家的位置，触发LevelBounds，然后加载所有关卡
+params WorldContextObject 
+-world上下文对象
+voidFlushAllStreamingResource(UObject *WorldContextObject)
+触发TextureStreaming， 将贴图全部加载完毕
+params WorldContextObject 
+-world上下文对象
+voidCancelAsyncLoading()
+Cancels all currently queued streaming packages
+voidOpenLevel(UObject * WorldContextObject, FName LevelName, bool bAbsolute, FStringOptions)
+Travel to another level
+
+params LevelName 
+- the level to open
+params bAbsolute 
+- if true options are reset, if false options are carried over from current level
+params Options 
+- a string of options to use for the travel URL
+voidOpenShaderLibrary(FString & Name, FString &VersionNum)
+voidCloseShaderLibrary(FString &Name)
+voidEnableShaderGroup(FString & GroupName, int32ShaderPlatform)
+Enable a new ShaderGroup for all opened ShaderCodeLibrary
+
+voidEnableShaderLevel(FString &ShaderLevelName)
+voidEnableShaderPak(FString &ShaderPakName)
+voidDisableShaderLevel(FString &ShaderLevelName)
+voidDisableShaderPak(FString &ShaderPakName)
+voidRestartShaderPrecompile()
+voidOpenShaderCodeLibrary(FString &Version)
+OpenShaderCodeLibrary in Saved Folder
+
+FStringGetCurrentLevelName(UObject * WorldContextObject, boolbRemovePrefixString)
+获得当前关卡名称
+return  
+-关卡名称
+params WorldContextObject 
+-world上下文对象
+params bRemovePrefixString 
+-是否移除prefix的字符串
+AGameModeBase *GetGameMode(UObject *WorldContextObject)
+获得当前GameMode
+return  
+-当前GameMode
+params WorldContextObject 
+-world上下文对象
+AGameStateBase *GetGameState(UObject *WorldContextObject)
+获得当前GameState
+return  
+-当前GameState
+params WorldContextObject 
+-world上下文对象
+AGameStateBase *GetGameStateByWorldContext(UObject *WorldContextObject)
+UClass *GetObjectClass(UObject *Object)
+获得对象的类型
+return  
+-对象的类型
+params Object 
+-指定对象
+floatGetGlobalTimeDilation(UObject *WorldContextObject)
+获得当前时间膨胀
+return  
+-Current time dilation.
+params WorldContextObject 
+-world上下文对象
+voidSetGlobalTimeDilation(UObject * WorldContextObject, floatTimeDilation)
+设置时间膨胀
+params WorldContextObject 
+-world上下文对象
+params TimeDilation 
+-世界的时间膨胀
+boolSetGamePaused(UObject * WorldContextObject, boolbPaused)
+设置游戏是否暂停
+return  
+-Whether the game was successfully pausedunpaused
+params WorldContextObject 
+-world上下文对象
+params bPaused 
+-是否暂停
+boolIsGamePaused(UObject *WorldContextObject)
+判断游戏是否暂停
+return  
+-Whether the game is currently paused or not
+params WorldContextObject 
+-world上下文对象
+boolApplyRadialDamage(UObject * WorldContextObject, float BaseDamage, FVector & Origin, float DamageRadius, TSubclassOf < UDamageType > DamageTypeClass, TArray < AActor * > & IgnoreActors, AActor * DamageCauser, AController * InstigatedByController, bool bDoFullDamage, ECollisionChannel DamagePreventionChannel, int32DamageTag)
+Hurt locally authoritative actors within the radius. Will only hit components that block the Visibility channel.
+return  
+-true if damage was applied to at least one actor.
+params BaseDamage 
+-- The base damage to apply, i.e. the damage at the origin.
+params Origin 
+-- Epicenter of the damage area.
+params DamageRadius 
+-- Radius of the damage area, from Origin
+params DamageTypeClass 
+-- Class that describes the damage that was done.
+params DamageCauser 
+-- Actor that actually caused the damage (e.g. the grenade that exploded). This actor will not be damaged and it will not block damage.
+params InstigatedByController 
+-- Controller that was responsible for causing this damage (e.g. player who threw the grenade)
+params DamagePreventionChannel 
+-- Damage will not be applied to victim if there is something between the origin and the victim which blocks traces on this channel
+boolApplyRadialDamageWithFalloff(UObject * WorldContextObject, float BaseDamage, float MinimumDamage, FVector & Origin, float DamageInnerRadius, float DamageOuterRadius, float DamageFalloff, TSubclassOf < UDamageType > DamageTypeClass, TArray < AActor * > & IgnoreActors, AActor * DamageCauser, AController * InstigatedByController, ECollisionChannel DamagePreventionChannel, int32DamageTag)
+Hurt locally authoritative actors within the radius. Will only hit components that block the Visibility channel.
+return  
+-true if damage was applied to at least one actor.
+params BaseDamage 
+-- The base damage to apply, i.e. the damage at the origin.
+params Origin 
+-- Epicenter of the damage area.
+params DamageInnerRadius 
+-- Radius of the full damage area, from Origin
+params DamageOuterRadius 
+-- Radius of the minimum damage area, from Origin
+params DamageFalloff 
+-- Falloff exponent of damage from DamageInnerRadius to DamageOuterRadius
+params DamageTypeClass 
+-- Class that describes the damage that was done.
+params DamageCauser 
+-- Actor that actually caused the damage (e.g. the grenade that exploded)
+params InstigatedByController 
+-- Controller that was responsible for causing this damage (e.g. player who threw the grenade)
+params DamagePreventionChannel 
+-- Damage will not be applied to victim if there is something between the origin and the victim which blocks traces on this channel
+floatApplyPointDamage(AActor * DamagedActor, float BaseDamage, FVector & HitFromDirection, FHitResult & HitInfo, AController * EventInstigator, AActor * DamageCauser, TSubclassOf < UDamageType > DamageTypeClass, int32DamageTag)
+Hurts the specified actor with the specified impact.
+return  
+-Actual damage the ended up being applied to the actor.
+params DamagedActor 
+-- Actor that will be damaged.
+params BaseDamage 
+-- The base damage to apply.
+params HitFromDirection 
+-- Direction the hit came FROM
+params HitInfo 
+-- Collision or trace result that describes the hit
+params EventInstigator 
+-- Controller that was responsible for causing this damage (e.g. player who shot the weapon)
+params DamageCauser 
+-- Actor that actually caused the damage (e.g. the grenade that exploded)
+params DamageTypeClass 
+-- Class that describes the damage that was done.
+floatApplyDamage(AActor * DamagedActor, float BaseDamage, AController * EventInstigator, AActor * DamageCauser, TSubclassOf < UDamageType > DamageTypeClass, int32DamageTag)
+Hurts the specified actor with generic damage.
+return  
+-Actual damage the ended up being applied to the actor.
+params DamagedActor 
+-- Actor that will be damaged.
+params BaseDamage 
+-- The base damage to apply.
+params EventInstigator 
+-- Controller that was responsible for causing this damage (e.g. player who shot the weapon)
+params DamageCauser 
+-- Actor that actually caused the damage (e.g. the grenade that exploded)
+params DamageTypeClass 
+-- Class that describes the damage that was done.
+voidPlayWorldCameraShake(UObject * WorldContextObject, TSubclassOf < UCameraShake > Shake, FVector Epicenter, float InnerRadius, float OuterRadius, float Falloff, boolbOrientShakeTowardsEpicenter)
+Plays an in-world camera shake that affects all nearby local players, with distance-based attenuation. Does not replicate.
+params WorldContextObject 
+-- Object that we can obtain a world context from
+params Shake 
+-- Camera shake asset to use
+params Epicenter 
+-- location to place the effect in world space
+params InnerRadius 
+-- Cameras inside this radius are ignored
+params OuterRadius 
+-- Cameras outside of InnerRadius and inside this are effected
+params Falloff 
+-- Affects falloff of effect as it nears OuterRadius
+params bOrientShakeTowardsEpicenter 
+-- Changes the rotation of shake to point towards epicenter instead of forward
+UParticleSystemComponent *SpawnEmitterAtLocation(UObject * WorldContextObject, UParticleSystem * EmitterTemplate, FVector Location, FRotator Rotation, FVector Scale, boolbAutoDestroy)
+Plays the specified effect at the given location and rotation, fire and forget. The system will go away when the effect is complete. Does not replicate.
+params WorldContextObject 
+-- Object that we can obtain a world context from
+params EmitterTemplate 
+-- particle system to create
+params Location 
+-- location to place the effect in world space
+params Rotation 
+-- rotation to place the effect in world space
+params Scale 
+-- scale to create the effect at
+params bAutoDestroy 
+-- Whether the component will automatically be destroyed when the particle system completes playing or whether it can be reactivated
+UParticleSystemComponent *SpawnEmitterAttached(UParticleSystem * EmitterTemplate, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, FVector Scale, EAttachLocation :: Type LocationType, boolbAutoDestroy)
+Plays the specified effect attached to and following the specified component. The system will go away when the effect is complete. Does not replicate.
+params EmitterTemplate 
+-- particle system to create
+params AttachPointName 
+-- Optional named point within the AttachComponent to spawn the emitter at
+params Location 
+-- Depending on the value of LocationType this is either a relative offset from the attach componentpoint or an absolute world location that will be translated to a relative offset (if LocationType is KeepWorldPosition).
+params Rotation 
+-- Depending on the value of LocationType this is either a relative offset from the attach componentpoint or an absolute world rotation that will be translated to a relative offset (if LocationType is KeepWorldPosition).
+params Scale 
+-- Depending on the value of LocationType this is either a relative scale from the attach component or an absolute world scale that will be translated to a relative scale (if LocationType is KeepWorldPosition).
+params LocationType 
+-- Specifies whether Location is a relative offset or an absolute world position
+params bAutoDestroy 
+-- Whether the component will automatically be destroyed when the particle system completes playing or whether it can be reactivated
+UParticleSystemComponent *SpawnEmitterAttachedToActor(UParticleSystem * EmitterTemplate, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, FVector Scale, EAttachLocation :: Type LocationType, boolbAutoDestroy)
+boolAreAnyListenersWithinRange(UObject * WorldContextObject, FVector Location, floatMaximumRange)
+Determines if any audio listeners are within range of the specified location
+params Location 
+-The location to potentially play a sound at
+params MaximumRange 
+-The maximum distance away from Location that a listener can be
+voidSetGlobalPitchModulation(UObject * WorldContextObject, float PitchModulation, floatTimeSec)
+Sets a global pitch modulation scalar that will apply to all non-UI sounds
+
+Fire and Forget.
+Not Replicated.
+params PitchModulation 
+-- A pitch modulation value to globally set.
+params TimeSec 
+-- A time value to linearly interpolate the global modulation pitch over from it's current value.
+voidSetGlobalListenerFocusParameters(UObject * WorldContextObject, float FocusAzimuthScale, float NonFocusAzimuthScale, float FocusDistanceScale, float NonFocusDistanceScale, float FocusVolumeScale, float NonFocusVolumeScale, float FocusPriorityScale, floatNonFocusPriorityScale)
+Sets the global listener focus parameters which will scale focus behavior of sounds based on their focus azimuth settings in their attenuation settings.
+
+Fire and Forget.
+Not Replicated.
+params FocusAzimuthScale 
+-- An angle scale value used to scale the azimuth angle that defines where sounds are in-focus.
+params FocusDistanceScale 
+-- A distance scale value to use for sounds which are in-focus. Values < 1.0 will reduce perceived distance to sounds, values > 1.0 will increase perceived distance to in-focus sounds.
+params NonFocusDistanceScale 
+-- A distance scale value to use for sounds which are out-of-focus. Values < 1.0 will reduce perceived distance to sounds, values > 1.0 will increase perceived distance to in-focus sounds.
+params FocusPriorityScale 
+-- A priority scale value (> 0.0) to use for sounds which are in-focus. Values < 1.0 will reduce the priority of in-focus sounds, values > 1.0 will increase the priority of in-focus sounds.
+params NonFocusPriorityScale 
+-- A priority scale value (> 0.0) to use for sounds which are out-of-focus. Values < 1.0 will reduce the priority of sounds out-of-focus sounds, values > 1.0 will increase the priority of out-of-focus sounds.
+voidPlaySound2D(UObject * WorldContextObject, USoundBase * Sound, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundConcurrency * ConcurrencySettings, AActor *OwningActor)
+Plays a sound directly with no attenuation, perfect for UI sounds.
+
+Fire and Forget.
+Not Replicated.
+params Sound 
+-- Sound to play.
+params VolumeMultiplier 
+-- Multiplied with the volume to make the sound louder or softer.
+params PitchMultiplier 
+-- Multiplies the pitch.
+params StartTime 
+-- How far in to the sound to begin playback at
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params OwningActor 
+-- The actor to use as the "owner" for concurrency settings purposes. Allows PlaySound calls to do a concurrency limit per owner.
+UAudioComponent *SpawnSound2D(UObject * WorldContextObject, USoundBase * Sound, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundConcurrency * ConcurrencySettings, bool bPersistAcrossLevelTransition, boolbAutoDestroy)
+Spawns a sound with no attenuation, perfect for UI sounds.
+
+Not Replicated.
+return  
+-An audio component to manipulate the spawned sound
+params Sound 
+-- Sound to play.
+params VolumeMultiplier 
+-- Multiplied with the volume to make the sound louder or softer.
+params PitchMultiplier 
+-- Multiplies the pitch.
+params StartTime 
+-- How far in to the sound to begin playback at
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+UAudioComponent *CreateSound2D(UObject * WorldContextObject, USoundBase * Sound, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundConcurrency * ConcurrencySettings, bool bPersistAcrossLevelTransition, boolbAutoDestroy)
+Creates a sound with no attenuation, perfect for UI sounds. This does NOT play the sound
+
+Not Replicated.
+return  
+-An audio component to manipulate the created sound
+params Sound 
+-- Sound to create.
+params VolumeMultiplier 
+-- Multiplied with the volume to make the sound louder or softer.
+params PitchMultiplier 
+-- Multiplies the pitch.
+params StartTime 
+-- How far in to the sound to begin playback at
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+voidPlaySoundAtLocation(UObject * WorldContextObject, USoundBase * Sound, FVector Location, FRotator Rotation, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, USoundConcurrency * ConcurrencySettings, AActor *OwningActor)
+Plays a sound at the given location. This is a fire and forget sound and does not travel with any actor. Replication is also not handled at this point.
+params Sound 
+-- sound to play
+params Location 
+-- World position to play sound at
+params Rotation 
+-- World rotation to play sound at
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- PitchMultiplier
+params StartTime 
+-- How far in to the sound to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params OwningActor 
+-- The actor to use as the "owner" for concurrency settings purposes. Allows PlaySound calls to do a concurrency limit per owner.
+UAudioComponent *SpawnSoundAtLocation(UObject * WorldContextObject, USoundBase * Sound, FVector Location, FRotator Rotation, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, USoundConcurrency * ConcurrencySettings, boolbAutoDestroy)
+Spawns a sound at the given location. This does not travel with any actor. Replication is also not handled at this point.
+return  
+-An audio component to manipulate the spawned sound
+params Sound 
+-- sound to play
+params Location 
+-- World position to play sound at
+params Rotation 
+-- World rotation to play sound at
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- PitchMultiplier
+params StartTime 
+-- How far in to the sound to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+UAudioComponent *SpawnSoundAttached(USoundBase * Sound, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, EAttachLocation :: Type LocationType, bool bStopWhenAttachedToDestroyed, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, USoundConcurrency * ConcurrencySettings, boolbAutoDestroy)
+Plays a sound attached to and following the specified component. This is a fire and forget sound. Replication is also not handled at this point.
+return  
+-An audio component to manipulate the spawned sound
+params Sound 
+-- sound to play
+params AttachPointName 
+-- Optional named point within the AttachComponent to play the sound at
+params Location 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world position that will be translated to a relative offset
+params Rotation 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world rotation that will be translated to a relative offset
+params LocationType 
+-- Specifies whether Location is a relative offset or an absolute world position
+params bStopWhenAttachedToDestroyed 
+-- Specifies whether the sound should stop playing when the owner of the attach to component is destroyed.
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- PitchMultiplier
+params StartTime 
+-- How far in to the sound to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+params ConcurrencySettings 
+-- Override concurrency settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+voidPlayDialogue2D(UObject * WorldContextObject, UDialogueWave * Dialogue, FDialogueContext & Context, float VolumeMultiplier, float PitchMultiplier, floatStartTime)
+Plays a dialogue directly with no attenuation, perfect for UI.
+
+Fire and Forget.
+Not Replicated.
+params Dialogue 
+-- dialogue to play
+params Context 
+-- context the dialogue is to play in
+params VolumeMultiplier 
+-- Multiplied with the volume to make the sound louder or softer.
+params PitchMultiplier 
+-- Multiplies the pitch.
+params StartTime 
+-- How far in to the dialogue to begin playback at
+UAudioComponent *SpawnDialogue2D(UObject * WorldContextObject, UDialogueWave * Dialogue, FDialogueContext & Context, float VolumeMultiplier, float PitchMultiplier, float StartTime, boolbAutoDestroy)
+Spawns a dialogue with no attenuation, perfect for UI.
+
+Not Replicated.
+return  
+-An audio component to manipulate the spawned sound
+params Dialogue 
+-- dialogue to play
+params Context 
+-- context the dialogue is to play in
+params VolumeMultiplier 
+-- Multiplied with the volume to make the sound louder or softer.
+params PitchMultiplier 
+-- Multiplies the pitch.
+params StartTime 
+-- How far in to the dialogue to begin playback at
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+voidPlayDialogueAtLocation(UObject * WorldContextObject, UDialogueWave * Dialogue, FDialogueContext & Context, FVector Location, FRotator Rotation, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation *AttenuationSettings)
+Plays a dialogue at the given location. This is a fire and forget sound and does not travel with any actor. Replication is also not handled at this point.
+params Dialogue 
+-- dialogue to play
+params Context 
+-- context the dialogue is to play in
+params Location 
+-- World position to play dialogue at
+params Rotation 
+-- World rotation to play dialogue at
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- Pitch multiplier
+params StartTime 
+-- How far in to the dialogue to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+UAudioComponent *SpawnDialogueAtLocation(UObject * WorldContextObject, UDialogueWave * Dialogue, FDialogueContext & Context, FVector Location, FRotator Rotation, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, boolbAutoDestroy)
+Plays a dialogue at the given location. This is a fire and forget sound and does not travel with any actor. Replication is also not handled at this point.
+return  
+-Audio Component to manipulate the playing dialogue with
+params Dialogue 
+-- dialogue to play
+params Context 
+-- context the dialogue is to play in
+params Location 
+-- World position to play dialogue at
+params Rotation 
+-- World rotation to play dialogue at
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- PitchMultiplier
+params StartTime 
+-- How far in to the dialogue to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+UAudioComponent *SpawnDialogueAttached(UDialogueWave * Dialogue, FDialogueContext & Context, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, EAttachLocation :: Type LocationType, bool bStopWhenAttachedToDestroyed, float VolumeMultiplier, float PitchMultiplier, float StartTime, USoundAttenuation * AttenuationSettings, boolbAutoDestroy)
+Spawns a dialogue attached to and following the specified component. This is a fire and forget sound. Replication is also not handled at this point.
+return  
+-Audio Component to manipulate the playing dialogue with
+params Dialogue 
+-- dialogue to play
+params Context 
+-- context the dialogue is to play in
+params AttachPointName 
+-- Optional named point within the AttachComponent to play the sound at
+params Location 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world position that will be translated to a relative offset
+params Rotation 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world rotation that will be translated to a relative offset
+params LocationType 
+-- Specifies whether Location is a relative offset or an absolute world position
+params bStopWhenAttachedToDestroyed 
+-- Specifies whether the sound should stop playing when the owner of the attach to component is destroyed.
+params VolumeMultiplier 
+-- Volume multiplier
+params PitchMultiplier 
+-- PitchMultiplier
+params StartTime 
+-- How far in to the dialogue to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play sound with
+params bAutoDestroy 
+-- Whether the returned audio component will be automatically cleaned up when the sound finishes (by completing or stopping) or whether it can be reactivated
+UForceFeedbackComponent *SpawnForceFeedbackAtLocation(UObject * WorldContextObject, UForceFeedbackEffect * ForceFeedbackEffect, FVector Location, FRotator Rotation, bool bLooping, float IntensityMultiplier, float StartTime, UForceFeedbackAttenuation * AttenuationSettings, boolbAutoDestroy)
+Plays a force feedback effect at the given location. This is a fire and forget effect and does not travel with any actor. Replication is also not handled at this point.
+return  
+-Force Feedback Component to manipulate the playing feedback effect with
+params ForceFeedbackEffect 
+-- effect to play
+params Location 
+-- World position to center the effect at
+params Rotation 
+-- World rotation to center the effect at
+params IntensityMultiplier 
+-- Intensity multiplier
+params StartTime 
+-- How far in to the feedback effect to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play effect with
+params bAutoDestroy 
+-- Whether the returned force feedback component will be automatically cleaned up when the feedback patern finishes (by completing or stopping) or whether it can be reactivated
+UForceFeedbackComponent *SpawnForceFeedbackAttached(UForceFeedbackEffect * ForceFeedbackEffect, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, EAttachLocation :: Type LocationType, bool bStopWhenAttachedToDestroyed, bool bLooping, float IntensityMultiplier, float StartTime, UForceFeedbackAttenuation * AttenuationSettings, boolbAutoDestroy)
+Plays a force feedback effect attached to and following the specified component. This is a fire and forget effect. Replication is also not handled at this point.
+return  
+-Force Feedback Component to manipulate the playing feedback effect with
+params ForceFeedbackEffect 
+-- effect to play
+params AttachPointName 
+-- Optional named point within the AttachComponent to attach to
+params Location 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world position that will be translated to a relative offset
+params Rotation 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world rotation that will be translated to a relative offset
+params LocationType 
+-- Specifies whether Location is a relative offset or an absolute world position
+params bStopWhenAttachedToDestroyed 
+-- Specifies whether the feedback effect should stop playing when the owner of the attach to component is destroyed.
+params IntensityMultiplier 
+-- Intensity multiplier
+params StartTime 
+-- How far in to the feedback effect to begin playback at
+params AttenuationSettings 
+-- Override attenuation settings package to play effect with
+params bAutoDestroy 
+-- Whether the returned force feedback component will be automatically cleaned up when the feedback patern finishes (by completing or stopping) or whether it can be reactivated
+voidSetSubtitlesEnabled(boolbEnabled)
+Will set subtitles to be enabled or disabled.
+params bEnabled 
+-will enable subtitle drawing if true, disable if false.
+boolAreSubtitlesEnabled()
+Returns whether or not subtitles are currently enabled.
+return  
+-true if subtitles are enabled.
+voidSetBaseSoundMix(UObject * WorldContextObject, USoundMix *InSoundMix)
+Set the sound mix of the audio system for special EQing
+voidSetSoundMixClassOverride(UObject * WorldContextObject, USoundMix * InSoundMixModifier, USoundClass * InSoundClass, float Volume, float Pitch, float FadeInTime, boolbApplyToChildren)
+Overrides the sound class adjuster in the given sound mix. If the sound class does not exist in the input sound mix, the sound class adjustment will be added to the sound mix.
+params InSoundMixModifier 
+-The sound mix to modify.
+params InSoundClass 
+-The sound class to override (or add) in the sound mix.
+params Volume 
+-The volume scale to set the sound class adjuster to.
+params Pitch 
+-The pitch scale to set the sound class adjuster to.
+params FadeInTime 
+-The interpolation time to use to go from the current sound class adjuster values to the new values.
+params bApplyToChildren 
+-Whether or not to apply this override to the sound class' children or to just the specified sound class.
+voidClearSoundMixClassOverride(UObject * WorldContextObject, USoundMix * InSoundMixModifier, USoundClass * InSoundClass, floatFadeOutTime)
+Clears the override of the sound class adjuster in the given sound mix. If the override did not exist in the sound mix, this will do nothing.
+params InSoundMixModifier 
+-The sound mix to modify.
+params InSoundClass 
+-The sound class to override (or add) in the sound mix.
+params FadeOutTime 
+-The interpolation time to use to go from the current sound class adjuster override values to the non-override values.
+voidPushSoundMixModifier(UObject * WorldContextObject, USoundMix *InSoundMixModifier)
+Push a sound mix modifier onto the audio system
+voidPopSoundMixModifier(UObject * WorldContextObject, USoundMix *InSoundMixModifier)
+Pop a sound mix modifier from the audio system
+voidClearSoundMixModifiers(UObject *WorldContextObject)
+Clear all sound mix modifiers from the audio system
+voidActivateReverbEffect(UObject * WorldContextObject, UReverbEffect * ReverbEffect, FName TagName, float Priority, float Volume, floatFadeTime)
+Activates a Reverb Effect without the need for a volume
+params ReverbEffect 
+-Reverb Effect to use
+params TagName 
+-Tag to associate with Reverb Effect
+params Priority 
+-Priority of the Reverb Effect
+params Volume 
+-Volume level of Reverb Effect
+params FadeTime 
+-Time before Reverb Effect is fully active
+voidDeactivateReverbEffect(UObject * WorldContextObject, FNameTagName)
+Deactivates a Reverb Effect not applied by a volume
+
+params TagName 
+-Tag associated with Reverb Effect to remove
+UReverbEffect *GetCurrentReverbEffect(UObject *WorldContextObject)
+Returns the highest priority reverb settings currently active from any source (volumes or manual setting).
+UDecalComponent *SpawnDecalAtLocation(UObject * WorldContextObject, UMaterialInterface * DecalMaterial, FVector DecalSize, FVector Location, FRotator Rotation, floatLifeSpan)
+Spawns a decal at the given location and rotation, fire and forget. Does not replicate.
+params DecalMaterial 
+-- decal's material
+params DecalSize 
+-- size of decal
+params Location 
+-- location to place the decal in world space
+params Rotation 
+-- rotation to place the decal in world space
+params LifeSpan 
+-- destroy decal component after time runs out (0 = infinite)
+UDecalComponent *SpawnDecalAttached(UMaterialInterface * DecalMaterial, FVector DecalSize, USceneComponent * AttachToComponent, FName AttachPointName, FVector Location, FRotator Rotation, EAttachLocation :: Type LocationType, floatLifeSpan)
+Spawns a decal attached to and following the specified component. Does not replicate.
+params DecalMaterial 
+-- decal's material
+params DecalSize 
+-- size of decal
+params AttachPointName 
+-- Optional named point within the AttachComponent to spawn the emitter at
+params Location 
+-- Depending on the value of Location Type this is either a relative offset from the attach componentpoint or an absolute world position that will be translated to a relative offset
+params Rotation 
+-- Depending on the value of LocationType this is either a relative offset from the attach componentpoint or an absolute world rotation that will be translated to a realative offset
+params LocationType 
+-- Specifies whether Location is a relative offset or an absolute world position
+params LifeSpan 
+-- destroy decal component after time runs out (0 = infinite)
+voidBreakHitResult(FHitResult & Hit, bool & bBlockingHit, bool & bInitialOverlap, float & Time, float & Distance, FVector & Location, FVector & ImpactPoint, FVector & Normal, FVector & ImpactNormal, UPhysicalMaterial * & PhysMat, AActor * & HitActor, UPrimitiveComponent * & HitComponent, FName & HitBoneName, int32 & HitItem, int32 & FaceIndex, FVector & TraceStart, FVector &TraceEnd)
+Extracts data from a HitResult.
+params Hit 
+- The source HitResult.
+params bBlockingHit 
+-True if there was a blocking hit, false otherwise.
+params bInitialOverlap 
+-True if the hit started in an initial overlap. In this case some other values should be interpreted differently. Time will be 0, ImpactPoint will equal Location, and normals will be equal and indicate a depenetration vector.
+params Time 
+- 'Time' of impact along trace direction ranging from [0.0 to 1.0) if there is a hit, indicating time between start and end. Equals 1.0 if there is no hit.
+params Distance 
+-The distance from the TraceStart to the Location in world space. This value is 0 if there was an initial overlap (trace started inside another colliding object).
+params Location 
+-Location of the hit in world space. If this was a swept shape test, this is the location where we can place the shape in the world where it will not penetrate.
+params ImpactPoint 
+-Location of the actual contact point of the trace shape with the surface of the hit object. Equal to Location in the case of an initial overlap.
+params Normal 
+-Normal of the hit in world space, for the object that was swept (e.g. for a sphere trace this points towards the sphere's center). Equal to ImpactNormal for line tests.
+params ImpactNormal 
+-Normal of the hit in world space, for the object that was hit by the sweep.
+params PhysMat 
+-Physical material that was hit. Must set bReturnPhysicalMaterial to true in the query params for this to be returned.
+params HitActor 
+-Actor hit by the trace.
+params HitComponent 
+-PrimitiveComponent hit by the trace.
+params HitBoneName 
+-Name of the bone hit (valid only if we hit a skeletal mesh).
+params HitItem 
+-Primitive-specific data recording which item in the primitive was hit
+params FaceIndex 
+-If colliding with trimesh or landscape, index of face that was hit.
+FHitResultMakeHitResult(bool bBlockingHit, bool bInitialOverlap, float Time, float Distance, FVector Location, FVector ImpactPoint, FVector Normal, FVector ImpactNormal, UPhysicalMaterial * PhysMat, AActor * HitActor, UPrimitiveComponent * HitComponent, FName HitBoneName, int32 HitItem, int32 FaceIndex, FVector TraceStart, FVectorTraceEnd)
+Create a HitResult struct
+params bBlockingHit 
+-True if there was a blocking hit, false otherwise.
+params bInitialOverlap 
+-True if the hit started in an initial overlap. In this case some other values should be interpreted differently. Time will be 0, ImpactPoint will equal Location, and normals will be equal and indicate a depenetration vector.
+params Time 
+- 'Time' of impact along trace direction ranging from [0.0 to 1.0) if there is a hit, indicating time between start and end. Equals 1.0 if there is no hit.
+params Distance 
+-The distance from the TraceStart to the Location in world space. This value is 0 if there was an initial overlap (trace started inside another colliding object).
+params Location 
+-Location of the hit in world space. If this was a swept shape test, this is the location where we can place the shape in the world where it will not penetrate.
+params ImpactPoint 
+-Location of the actual contact point of the trace shape with the surface of the hit object. Equal to Location in the case of an initial overlap.
+params Normal 
+-Normal of the hit in world space, for the object that was swept (e.g. for a sphere trace this points towards the sphere's center). Equal to ImpactNormal for line tests.
+params ImpactNormal 
+-Normal of the hit in world space, for the object that was hit by the sweep.
+params PhysMat 
+-Physical material that was hit. Must set bReturnPhysicalMaterial to true in the query params for this to be returned.
+params HitActor 
+-Actor hit by the trace.
+params HitComponent 
+-PrimitiveComponent hit by the trace.
+params HitBoneName 
+-Name of the bone hit (valid only if we hit a skeletal mesh).
+params HitItem 
+-Primitive-specific data recording which item in the primitive was hit
+params FaceIndex 
+-If colliding with trimesh or landscape, index of face that was hit.
+EPhysicalSurfaceGetSurfaceType(FHitResult &Hit)
+Returns the EPhysicalSurface type of the given Hit.
+To edit surface type for your project, use ProjectSettingsPhysicsPhysicalSurface section
+boolFindCollisionUV(FHitResult & Hit, int32 UVChannel, FVector2D &UV)
+Try and find the UV for a collision impact. Note this ONLY works if 'Support UV From Hit Results' is enabled in Physics Settings.
+USaveGame *CreateSaveGameObject(TSubclassOf < USaveGame >SaveGameClass)
+Create a new, empty SaveGame object to set data on and then pass to SaveGameToSlot.
+return  
+- New SaveGame object to write data to
+params SaveGameClass 
+-Class of SaveGame to create
+USaveGame *CreateSaveGameObjectFromBlueprint(UBlueprint *SaveGameBlueprint)
+Create a new, empty SaveGame object to set data on and then pass to SaveGameToSlot.
+return  
+- New SaveGame object to write data to
+params SaveGameBlueprint 
+-Blueprint of SaveGame to create
+boolSaveGameToSlot(USaveGame * SaveGameObject, FString & SlotName, int32UserIndex)
+Save the contents of the SaveGameObject to a slot.
+return  
+- Whether we successfully saved this information
+params SaveGameObject 
+-Object that contains data about the save game that we want to write out
+params SlotName 
+- Name of save game slot to save to.
+params UserIndex 
+-For some platforms, master user index to identify the user doing the saving.
+boolDoesSaveGameExist(FString & SlotName, int32UserIndex)
+See if a save game exists with the specified name.
+params SlotName 
+- Name of save game slot.
+params UserIndex 
+-For some platforms, master user index to identify the user doing the saving.
+voidBindLoadGameGuardEntranceCheckDelegate(UObject * Obj, FString &FuncName)
+voidBindLoadGameGuardExitCheckDelegate(UObject * Obj, FString &FuncName)
+USaveGame *LoadGameFromSlot(FString & SlotName, int32UserIndex)
+Load the contents from a given slot.
+return  
+-SaveGameObject Object containing loaded game state (NULL if load fails)
+params SlotName 
+- Name of the save game slot to load from.
+params UserIndex 
+-For some platforms, master user index to identify the user doing the loading.
+USaveGame *LoadGameFromSlotWithSizeLimit(FString & SlotName, int32 UserIndex, int32MaxSerSize)
+Load the contents from a given slot.
+return  
+-SaveGameObject Object containing loaded game state (NULL if load fails)
+params SlotName 
+- Name of the save game slot to load from.
+params UserIndex 
+-For some platforms, master user index to identify the user doing the loading.
+params MaxSerSize 
+-Specify the maxserializesize of archive, just working for fstring.
+USaveGame *LoadGameFromMemory(TArray < uint8 > & ObjectBytes, int32MaxSerSize)
+USaveGame *LoadGameFromMemoryWithSizeLimit(TArray < uint8 > & ObjectBytes, int32MaxSerSize)
+boolDeleteGameInSlot(FString & SlotName, int32UserIndex)
+Delete a save game in a particular slot.
+return  
+-True if a file was actually able to be deleted. use DoesSaveGameExist to distinguish between delete failures and failure due to file not existing.
+params SlotName 
+- Name of save game slot to delete.
+params UserIndex 
+-For some platforms, master user index to identify the user doing the deletion.
+floatGetWorldDeltaSeconds(UObject *WorldContextObject)
+获得当前每帧的delta time，单位秒
+return  
+-每帧的delta time
+params WorldContextObject 
+-world上下文对象
+floatGetTimeSeconds(UObject *WorldContextObject)
+获得当前游戏开始之后的时间，单位秒，受时间膨胀和游戏暂停影响
+return  
+-游戏时间
+params WorldContextObject 
+-world上下文对象
+floatGetUnpausedTimeSeconds(UObject *WorldContextObject)
+获得当前游戏开始之后的时间，单位秒，受时间膨胀影响，但不受游戏暂停影响
+return  
+-游戏时间
+params WorldContextObject 
+-world上下文对象
+floatGetRealTimeSeconds(UObject *WorldContextObject)
+获得当前游戏开始之后的真实时间，单位秒，不受时间膨胀和游戏暂停影响
+return  
+-游戏时间
+params WorldContextObject 
+-world上下文对象
+floatGetAudioTimeSeconds(UObject *WorldContextObject)
+获得当前游戏开始之后的时间，单位秒，不受时间膨胀影响，但受时间暂停影响
+return  
+-游戏时间
+params WorldContextObject 
+-world上下文对象
+voidGetAccurateRealTime(UObject * WorldContextObject, int32 & Seconds, float &PartialSeconds)
+voidEnableLiveStreaming(boolEnable)
+~ DVRStreaming API
+
+Toggle live DVR streaming.
+params Enable 
+- If true enable streaming, otherwise disable.
+FStringGetPlatformName()
+Returns the string name of the current platform, to perform different behavior based on platform.
+(Platform names include Windows, Mac, IOS, Android, PS4, XboxOne, HTML5, Linux)
+boolBlueprintSuggestProjectileVelocity(UObject * WorldContextObject, FVector & TossVelocity, FVector StartLocation, FVector EndLocation, float LaunchSpeed, float OverrideGravityZ, ESuggestProjVelocityTraceOption :: Type TraceOption, float CollisionRadius, bool bFavorHighArc, boolbDrawDebug)
+Calculates an launch velocity for a projectile to hit a specified point.
+return  
+- Returns false if there is no valid solution or the valid solutions are blocked. Returns true otherwise.
+params TossVelocity 
+-(output) Result launch velocity.
+params StartLocation 
+-Intended launch location
+params EndLocation 
+-Desired landing location
+params LaunchSpeed 
+-Desired launch speed
+params OverrideGravityZ 
+-Optional gravity override. 0 means "do not override".
+params TraceOption 
+-Controls whether or not to validate a clear path by tracing along the calculated arc
+params CollisionRadius 
+-Radius of the projectile (assumed spherical), used when tracing
+params bFavorHighArc 
+-If true and there are 2 valid solutions, will return the higher arc. If false, will favor the lower arc.
+params bDrawDebug 
+-When true, a debug arc is drawn (red for an invalid arc, green for a valid arc)
+boolBlueprint_PredictProjectilePath_ByObjectType(UObject * WorldContextObject, FHitResult & OutHit, TArray < FVector > & OutPathPositions, FVector & OutLastTraceDestination, FVector StartPos, FVector LaunchVelocity, bool bTracePath, float ProjectileRadius, TArray < TEnumAsByte < EObjectTypeQuery > > & ObjectTypes, bool bTraceComplex, TArray < AActor * > & ActorsToIgnore, EDrawDebugTrace :: Type DrawDebugType, float DrawDebugTime, float SimFrequency, float MaxSimTime, floatOverrideGravityZ)
+Predict the arc of a virtual projectile affected by gravity with collision checks along the arc. Returns a list of positions of the simulated arc and the destination reached by the simulation.
+Returns true if it hit something.
+
+return  
+- True if hit something along the path if tracing for collision.
+params OutHit 
+- Predicted hit result, if the projectile will hit something
+params OutPathPositions 
+- Predicted projectile path. Ordered series of positions from StartPos to the end. Includes location at point of impact if it hit something.
+params OutLastTraceDestination 
+-Goal position of the final trace it did. Will not be in the path if there is a hit.
+params StartPos 
+- First start trace location
+params LaunchVelocity 
+- Velocity the "virtual projectile" is launched at
+params bTracePath 
+- Trace along the entire path to look for blocking hits
+params ProjectileRadius 
+- Radius of the virtual projectile to sweep against the environment
+params ObjectTypes 
+- ObjectTypes to trace against, if bTracePath is true.
+params bTraceComplex 
+- Use TraceComplex (trace against triangles not primitives)
+params ActorsToIgnore 
+- Actors to exclude from the traces
+params DrawDebugType 
+- Debug type (one-frame, duration, persistent)
+params DrawDebugTime 
+- Duration of debug lines (only relevant for DrawDebugType::Duration)
+params SimFrequency 
+- Determines size of each sub-step in the simulation (chopping up MaxSimTime)
+params MaxSimTime 
+- Maximum simulation time for the virtual projectile.
+params OverrideGravityZ 
+- Optional override of Gravity (if 0, uses WorldGravityZ)
+boolBlueprint_PredictProjectilePath_ByTraceChannel(UObject * WorldContextObject, FHitResult & OutHit, TArray < FVector > & OutPathPositions, FVector & OutLastTraceDestination, FVector StartPos, FVector LaunchVelocity, bool bTracePath, float ProjectileRadius, TEnumAsByte < ECollisionChannel > TraceChannel, bool bTraceComplex, TArray < AActor * > & ActorsToIgnore, EDrawDebugTrace :: Type DrawDebugType, float DrawDebugTime, float SimFrequency, float MaxSimTime, floatOverrideGravityZ)
+Predict the arc of a virtual projectile affected by gravity with collision checks along the arc. Returns a list of positions of the simulated arc and the destination reached by the simulation.
+Returns true if it hit something (if tracing with collision).
+
+return  
+- True if hit something along the path (if tracing with collision).
+params OutHit 
+- Predicted hit result, if the projectile will hit something
+params OutPathPositions 
+- Predicted projectile path. Ordered series of positions from StartPos to the end. Includes location at point of impact if it hit something.
+params OutLastTraceDestination 
+-Goal position of the final trace it did. Will not be in the path if there is a hit.
+params StartPos 
+- First start trace location
+params LaunchVelocity 
+- Velocity the "virtual projectile" is launched at
+params bTracePath 
+- Trace along the entire path to look for blocking hits
+params ProjectileRadius 
+- Radius of the virtual projectile to sweep against the environment
+params TraceChannel 
+- TraceChannel to trace against, if bTracePath is true.
+params bTraceComplex 
+- Use TraceComplex (trace against triangles not primitives)
+params ActorsToIgnore 
+- Actors to exclude from the traces
+params DrawDebugType 
+- Debug type (one-frame, duration, persistent)
+params DrawDebugTime 
+- Duration of debug lines (only relevant for DrawDebugType::Duration)
+params SimFrequency 
+- Determines size of each sub-step in the simulation (chopping up MaxSimTime)
+params MaxSimTime 
+- Maximum simulation time for the virtual projectile.
+params OverrideGravityZ 
+- Optional override of Gravity (if 0, uses WorldGravityZ)
+boolBlueprint_PredictProjectilePath_Advanced(UObject * WorldContextObject, FPredictProjectilePathParams & PredictParams, FPredictProjectilePathResult &PredictResult)
+Predict the arc of a virtual projectile affected by gravity with collision checks along the arc.
+Returns true if it hit something.
+
+return  
+- True if hit something along the path (if tracing with collision).
+params PredictParams 
+- Input params to the trace (start location, velocity, time to simulate, etc).
+params PredictResult 
+- Output result of the trace (Hit result, array of locationvelocitytimes for each trace step, etc).
+boolSuggestProjectileVelocity_CustomArc(UObject * WorldContextObject, FVector & OutLaunchVelocity, FVector StartPos, FVector EndPos, float OverrideGravityZ, floatArcParam)
+Returns the launch velocity needed for a projectile at rest at StartPos to land on EndPos.
+Assumes a medium arc (e.g. 45 deg on level ground). Projectile velocity is variable and unconstrained.
+Does no tracing.
+
+params OutLaunchVelocity 
+- Returns the launch velocity required to reach the EndPos
+params StartPos 
+- Start position of the simulation
+params EndPos 
+- Desired end location for the simulation
+params OverrideGravityZ 
+- Optional override of WorldGravityZ
+params ArcParam 
+- Change height of arc between 0.0-1.0 where 0.5 is the default medium arc
+FIntVectorGetWorldOriginLocation(UObject *WorldContextObject)
+获取世界原点位置
+return  
+-世界原点
+params WorldContextObject 
+-world上下文对象
+voidSetWorldOriginLocation(UObject * WorldContextObject, FIntVectorNewLocation)
+设置世界原点位置
+params WorldContextObject 
+-world上下文对象
+params NewLocation 
+-世界原点
+voidSetWorldOriginLocationByLua(UObject * WorldContextObject, int32 X, int32 Y, int32Z)
+设置世界原点位置
+params WorldContextObject 
+-world上下文对象
+voidSyncSetNewWorldOrigin(UObject * WorldContextObject, int32 X, int32 Y, int32Z)
+同步设置世界原点位置
+params WorldContextObject 
+-world上下文对象
+FVectorRebaseLocalOriginOntoZero(UObject * WorldContextObject, FVectorWorldLocation)
+返回基于原点坐标的local坐标
+return  
+-origin based position
+params WorldContextObject 
+-world上下文对象
+FVectorRebaseZeroOriginOntoLocal(UObject * WorldContextObject, FVectorWorldLocation)
+返回local坐标基于原点的坐标
+return  
+-local location
+params WorldContextObject 
+-world上下文对象
+int32GrassOverlappingSphereCount(UObject * WorldContextObject, UStaticMesh * StaticMesh, FVector CenterPosition, floatRadius)
+Counts how many grass foliage instances overlap a given sphere.
+
+return  
+-Number of foliage instances with their mesh set to Mesh that overlap the sphere.
+params CenterPosition 
+-The center position of the sphere.
+params Radius 
+- The radius of the sphere.
+boolDeprojectScreenToWorld(APlayerController * Player, FVector2D & ScreenPosition, FVector & WorldPosition, FVector &WorldDirection)
+获取给定2D屏幕空间中的坐标投影到3D世界空间中的坐标
+return  
+-是否转换成功
+params Player 
+-玩家的PlayerController
+params ScreenPosition 
+-屏幕空间中的坐标
+params WorldPosition 
+-输出的世界空间坐标
+params WorldDirection 
+-输出的方向向量，世界空间中，给定点远离相机方向的方向向量
+boolProjectWorldToScreen(APlayerController * Player, FVector & WorldPosition, FVector2D & ScreenPosition, boolbPlayerViewportRelative)
+获取给定3D世界空间中的坐标投影到2D屏幕空间中的坐标
+return  
+-是否转换成功
+params Player 
+-玩家的PlayerController
+params WorldPosition 
+-世界空间中的坐标
+params ScreenPosition 
+-输出的屏幕空间坐标
+params bPlayerViewportRelative 
+-是否与玩家视口相关
+boolMarkNetPropertyDirtyFromName(UObject * Object, FName PropertyName, ELifetimeConditionLifetimeCondition)
+Mark a particular net property of an UObject as dirty (for networking), thus it will be take into consideration in next replication
+params Object 
+- UObject to be marked dirty
+params PropertyName 
+-Name of the particular net property to be marked dirty
+voidGetKeyValue(FString & Pair, FString & Key, FString &Value)
+Break up a key=value pair into its key and value.
+params Pair 
+- The string containing a pair to split apart.
+params Key 
+- (out) Key portion of Pair. If no = in string will be the same as Pair.
+params Value 
+- (out) Value portion of Pair. If no = in string will be empty.
+FStringParseOption(FString Options, FString &Key)
+Find an option in the options string and return it.
+return  
+- The value associated with Key if Key found in Options string.
+params Options 
+-The string containing the options.
+params Key 
+- The key to find the value of in Options.
+boolHasOption(FString Options, FString &InKey)
+Returns whether a key exists in an options string.
+return  
+- Whether Key was found in Options.
+params Options 
+-The string containing the options.
+int32GetIntOption(FString & Options, FString & Key, int32DefaultValue)
+Find an option in the options string and return it as an integer.
+return  
+- The value associated with Key as an integer if Key found in Options string, otherwise DefaultValue.
+params Options 
+-The string containing the options.
+params Key 
+- The key to find the value of in Options.
+boolHasLaunchOption(FString &OptionToCheck)
+Checks the commandline to see if the desired option was specified on the commandline (e.g. -demobuild)
+return  
+- True if the launch option was specified on the commandline, false otherwise
+int32GetDeviceQualityLevel()
+int32GetDeviceTCQualityGrade()
+int32GetDeviceMemoryLevel()
+int32GetDeviceMemorySize()
+voidEnableObjArrayAutoResize(boolbEnabled)
+boolSetConsoleIntVariable(FString & Name, int32Value)
+voidUpdateComponentToWorld(UActorComponent *ActorComponent)
+boolIsLongScreen(UObject *WorldContextObject)
+boolIsWinReleaseBuild()
+voidRecordDSLaunchState(int32state)
+record ds launch state, collect for ds shutdown error report, add by czcheng
+params state 
+-launch state, see details in EDSLaunchState
+voidRecordDSShutdownErrorInfo(int32 ErrorCode, FString &ErrMsg)
+record ds shutdown error info, collect for ds shutdown error report, add by czcheng
+params ErrorCode 
+-shutdown error code, see details in EDSShutdownErrorCode
+params ErrMsg 
+-error message

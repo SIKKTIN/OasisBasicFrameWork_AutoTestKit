@@ -115,7 +115,10 @@ end
 local function getRoot()
     local source = debug.getinfo(1, "S").source:match("@(.*)") or ""
     source = source:gsub("/", "\\")
-    return source:match("^(.*)\\ExternalConfig\\config%.lua$")
+    local root = source:match("^(.*)\\ExternalConfig\\config%.lua$")
+    if root then return root end
+    if source == [[ExternalConfig\config.lua]] then return "." end
+    error("无法根据配置加载器位置确定工具根目录: " .. source)
 end
 
 function M.load(path)
@@ -125,7 +128,7 @@ function M.load(path)
     local ok, config = pcall(parseJson, content)
     if not ok then error("配置文件格式错误 " .. path .. ": " .. tostring(config)) end
     if type(config) ~= "table" then error("配置文件必须是 JSON 对象: " .. path) end
-    for _, key in ipairs({ "projectRoot", "testHelperRoot", "luaPath" }) do
+    for _, key in ipairs({ "projectRoot", "luaPath" }) do
         if type(config[key]) ~= "string" or config[key] == "" then
             error("配置缺少必填字段: " .. key)
         end

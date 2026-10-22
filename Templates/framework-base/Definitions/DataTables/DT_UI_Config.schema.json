@@ -1,0 +1,20 @@
+{
+  "formatVersion": 1,
+  "mode": "empty",
+  "tableName": "DT_UI_Config",
+  "assetDirectory": "Asset/Data/Table/Customized",
+  "creationTemplate": {
+    "editorType": "DataTable",
+    "assetType": "自定义表格",
+    "templateName": "空表格"
+  },
+  "fields": [
+    { "name": "Name", "category": "string" },
+    { "name": "AssetPath", "category": "string" },
+    { "name": "Zorder", "category": "string" },
+    { "name": "IsSingleton", "category": "bool" },
+    { "name": "Slot", "category": "string" },
+    { "name": "IsPreLoad", "category": "bool" }
+  ],
+  "notes": "通过 MCP 根据本定义直接创建六字段空表，无需 CSV。字段类型按现有 UI 结构保留，包括 string 类型的 Zorder；不登记具体 UI。"
+}

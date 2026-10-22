@@ -1,0 +1,11 @@
+{
+  "formatVersion": 1,
+  "assetPath": "Asset/Blueprint/Component/BP_PlayerPropertyComponent",
+  "parentClass": "ActorComponent",
+  "luaTemplate": "Project/Script/Blueprint/Component/BP_PlayerPropertyComponent.lua",
+  "targetRole": "PlayerController",
+  "componentName": "PlayerPropertyComponent",
+  "targetResolution": "GameMode.PlayerControllerClass",
+  "conflictPolicy": "preserve-and-report",
+  "luaSha256": "826696f04c0b290e5f91a17ec265d610b6ded3125d3bc009717bc2dfe4706f90"
+}

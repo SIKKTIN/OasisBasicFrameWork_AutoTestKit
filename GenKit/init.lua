@@ -504,76 +504,70 @@ function M.writePackageRegistry(results)
     f:write("}\n")
     f:write([=[
 
-local loadedRegistries = {}
-local disabledTicks = {
-    GameStateTick = {},
-    PlayerTick = {},
-}
-
+local loadedRegistries, ready = {}, {}
+local starting = false
+local disabledTicks = { GameStateTick = {}, PlayerTick = {} }
 local function Log(message)
-    if ugcprint then
-        ugcprint(message)
-    else
-        print(message)
-    end
+    (type(ugcprint) == "function" and ugcprint or print)(message)
 end
-
-local function LoadRegistry(modulePath)
-    if loadedRegistries[modulePath] ~= nil then
-        return loadedRegistries[modulePath] or nil
-    end
-
-    local ok, registry = pcall(require, modulePath)
-    if not ok then
-        Log("[Package_Registry] 加载失败: "
-            .. tostring(modulePath) .. ", " .. tostring(registry))
-        loadedRegistries[modulePath] = false
+local function LoadRegistry(path)
+    if loadedRegistries[path] then return loadedRegistries[path] end
+    local ok, registry = pcall(require, path)
+    if not ok or type(registry) ~= "table" then
+        Log("[Package_Registry] 加载失败: " .. path .. " | " .. tostring(registry))
         return nil
     end
-
-    loadedRegistries[modulePath] = registry or false
+    loadedRegistries[path] = registry
     return registry
 end
 
---- BeginPlay: 批量初始化所有 Registry
 function Package_Registry.BeginPlay()
-    for _, modulePath in ipairs(Package_Registry) do
-        local registry = LoadRegistry(modulePath)
-        if registry and registry.BeginPlay then
-            registry.BeginPlay()
+    if starting then return false, "initializing" end
+    starting = true
+    local success = true
+    for _, path in ipairs(Package_Registry) do
+        if not ready[path] then
+            local registry = LoadRegistry(path)
+            local ok, result, reason = registry ~= nil, nil, nil
+            if registry and registry.BeginPlay ~= nil then
+                if type(registry.BeginPlay) ~= "function" then
+                    ok, reason = false, "BeginPlay 必须是函数"
+                else
+                    ok, result, reason = pcall(registry.BeginPlay)
+                end
+            end
+            if not ok or result == false then
+                success = false
+                Log("[Package_Registry] BeginPlay 失败: " .. path .. " | "
+                    .. tostring(not ok and (reason or result) or reason or "返回 false"))
+            else
+                ready[path] = true
+            end
         end
     end
+    starting = false
+    return success
 end
 
-local function DispatchTick(tickName, ...)
-    local disabled = disabledTicks[tickName]
-    for _, modulePath in ipairs(Package_Registry) do
-        if not disabled[modulePath] then
-            local registry = LoadRegistry(modulePath)
-            local tickFunc = registry and registry[tickName]
-            if tickFunc then
-                local ok, err = pcall(tickFunc, ...)
-                if not ok then
-                    disabled[modulePath] = true
-                    Log("[Package_Registry] " .. tostring(tickName)
-                        .. " 执行失败，已禁用: " .. tostring(modulePath)
-                        .. ", " .. tostring(err))
-                end
+local function DispatchTick(name, ...)
+    for _, path in ipairs(Package_Registry) do
+        local registry = loadedRegistries[path]
+        local fn = registry and registry[name]
+        if ready[path] and not disabledTicks[name][path] and fn ~= nil then
+            local ok, err = pcall(fn, ...)
+            if not ok then
+                disabledTicks[name][path] = true
+                Log("[Package_Registry] " .. name .. " 失败，已停用: " .. path .. " | " .. tostring(err))
             end
         end
     end
 end
-
---- GameStateTick: 批量分发全局 Package Tick
 function Package_Registry.GameStateTick(gameState, deltaTime)
     DispatchTick("GameStateTick", gameState, deltaTime)
 end
-
---- PlayerTick: 批量分发每玩家 Package Tick
-function Package_Registry.PlayerTick(playerController, deltaTime)
-    DispatchTick("PlayerTick", playerController, deltaTime)
+function Package_Registry.PlayerTick(pc, deltaTime)
+    DispatchTick("PlayerTick", pc, deltaTime)
 end
-
 return Package_Registry
 ]=])
     f:close()
@@ -715,7 +709,7 @@ function M.writePackageMetaIndex(results)
     f:write("-- ============================================================\n")
     f:write("--\n")
     f:write("-- 作用：\n")
-    f:write("--   按需加载所有 Package_Meta，每次 Load() 都重新 require，不做缓存。\n")
+    f:write("--   按需加载所有 Package_Meta，每次调用 require，遵循 Lua 模块缓存。\n")
     f:write("--   Core 层（如 PlayerDataCore、EventCore 等）通过此文件\n")
     f:write("--   统一访问所有包的 Meta 声明（playerData / listensTo / 等）。\n")
     f:write("--\n")
@@ -736,20 +730,24 @@ function M.writePackageMetaIndex(results)
     f:write("    },\n")
     f:write("}\n")
     f:write("\n")
-    f:write("--- 加载全部 Meta（每次都重新 require，不缓存）\n")
-    f:write("--- 失败路径会打 ugcprint 错误日志，整体不会抛错。\n")
+    f:write("--- 加载全部 Meta（每次调用 require，遵循 Lua 模块缓存）\n")
+    f:write("--- 失败路径会打 ugcprint 错误日志，通过第二返回值反馈错误，整体不会抛错。\n")
     f:write("---@return table[] 成功加载的 Meta 列表\n")
     f:write("function Package_Meta_Index.Load()\n")
-    f:write("    local metas = {}\n")
-    f:write("    for _, path in ipairs(Package_Meta_Index.paths) do\n")
-    f:write("        local ok, meta = pcall(require, path)\n")
-    f:write("        if ok and meta then\n")
-    f:write("            metas[#metas+1] = meta\n")
-    f:write("        else\n")
-    f:write("            ugcprint(\"[Package_Meta_Index] Meta 加载失败: \" .. tostring(path))\n")
-    f:write("        end\n")
-    f:write("    end\n")
-    f:write("    return metas\n")
+    f:write([=[
+    local metas, errors = {}, {}
+    for _, path in ipairs(Package_Meta_Index.paths) do
+        local ok, meta = pcall(require, path)
+        if ok and type(meta) == "table" then
+            metas[#metas+1] = meta
+        else
+            errors[#errors+1] = {path = path, error = tostring(meta)}
+            (type(ugcprint) == "function" and ugcprint or print)(
+                "[Package_Meta_Index] Meta 加载失败: " .. tostring(path))
+        end
+    end
+    return metas, errors
+]=])
     f:write("end\n")
     f:write("\n")
     f:write("return Package_Meta_Index\n")
@@ -1502,96 +1500,63 @@ function M.writeCoreRegistry(results)
     end
     f:write("}\n\n")
     f:write([[
-local initialized = false
-local beginPlaySucceeded = nil
-local tickEntries = {}
-local loadedModules = {}
-local loadSucceeded = true
-
+local loadedModules, ready, disabledTicks = {}, {}, {}
+local starting = false
 local function Log(message)
-    if type(ugcprint) == "function" then
-        ugcprint(message)
-    elseif type(print) == "function" then
-        print(message)
-    end
+    (type(ugcprint) == "function" and ugcprint or print)(message)
 end
-
-local function ResolveModule(modulePath, loaded)
-    if type(loaded) == "table" then
-        return loaded
+local function LoadModule(path)
+    if loadedModules[path] then return loadedModules[path] end
+    local ok, module = pcall(require, path)
+    if ok and type(module) ~= "table" then
+        module = _G[path:match("([^.]+)$")]
     end
-    local globalName = modulePath:match("([^.]+)$")
-    local globalModule = _G and _G[globalName]
-    if type(globalModule) == "table" then
-        return globalModule
+    if not ok or type(module) ~= "table" then
+        Log("[Core_Registry] 加载失败: " .. path .. " | " .. tostring(module))
+        return nil
     end
-    return nil
+    loadedModules[path] = module
+    return module
 end
-
--- Global 模块在 Registry 被 require 时预加载；BeginPlay 只负责调用生命周期。
-for _, modulePath in ipairs(Core_Registry) do
-    local requireOk, loaded = pcall(require, modulePath)
-    if not requireOk then
-        loadSucceeded = false
-        Log("[Core_Registry] 模块加载失败: " .. modulePath .. " | " .. tostring(loaded))
-    else
-        local module = ResolveModule(modulePath, loaded)
-        if not module then
-            loadSucceeded = false
-            Log("[Core_Registry] Global 模块未返回 table 且未写入 _G: " .. modulePath)
-        else
-            loadedModules[modulePath] = module
-        end
-    end
-end
+-- 保留 Global 模块预加载；失败项在显式 BeginPlay 重试时重新加载。
+for _, path in ipairs(Core_Registry) do LoadModule(path) end
 
 function Core_Registry.BeginPlay()
-    if initialized then
-        return beginPlaySucceeded
-    end
-
-    initialized = true
-    beginPlaySucceeded = loadSucceeded
-    tickEntries = {}
-
-    for _, modulePath in ipairs(Core_Registry) do
-        local module = loadedModules[modulePath]
-        if module then
-            local moduleReady = true
-            if type(module.BeginPlay) == "function" then
-                local beginOk, beginError = pcall(module.BeginPlay)
-                if not beginOk then
-                    moduleReady = false
-                    beginPlaySucceeded = false
-                    Log("[Core_Registry] BeginPlay 失败: " .. modulePath
-                        .. " | " .. tostring(beginError))
+    if starting then return false, "initializing" end
+    starting = true
+    local success = true
+    for _, path in ipairs(Core_Registry) do
+        if not ready[path] then
+            local module = LoadModule(path)
+            local ok, result, reason = module ~= nil, nil, nil
+            if module and module.BeginPlay ~= nil then
+                if type(module.BeginPlay) ~= "function" then
+                    ok, reason = false, "BeginPlay 必须是函数"
+                else
+                    ok, result, reason = pcall(module.BeginPlay)
                 end
             end
-            if moduleReady and type(module.Tick) == "function" then
-                tickEntries[#tickEntries + 1] = {
-                    path = modulePath,
-                    module = module,
-                    disabled = false,
-                }
+            if not ok or result == false then
+                success = false
+                Log("[Core_Registry] BeginPlay 失败: " .. path .. " | "
+                    .. tostring(not ok and (reason or result) or reason or "返回 false"))
+            else
+                ready[path] = true
             end
         end
     end
-
-    return beginPlaySucceeded
+    starting = false
+    return success
 end
 
 function Core_Registry.Tick(deltaTime)
-    if not initialized then
-        return
-    end
-
-    for _, entry in ipairs(tickEntries) do
-        if not entry.disabled then
-            local tickOk, tickError = pcall(entry.module.Tick, deltaTime)
-            if not tickOk then
-                entry.disabled = true
-                Log("[Core_Registry] Tick 失败，已停用: " .. entry.path
-                    .. " | " .. tostring(tickError))
+    for _, path in ipairs(Core_Registry) do
+        local module = loadedModules[path]
+        if ready[path] and not disabledTicks[path] and module.Tick ~= nil then
+            local ok, err = pcall(module.Tick, deltaTime)
+            if not ok then
+                disabledTicks[path] = true
+                Log("[Core_Registry] Tick 失败，已停用: " .. path .. " | " .. tostring(err))
             end
         end
     end
@@ -1876,6 +1841,59 @@ local function SortedKeys(map)
     return keys
 end
 
+-- UE 复制属性按返回位置匹配，PLAYER_DATA_TYPE 的字典顺序不能作为复制顺序。
+-- 保留项目现有 PlayerController 字段布局，并将新增字段稳定追加到末尾。
+local PLAYER_DATA_ORDER = {
+    "CONDITION_DATA",
+    "BUILDING_DATA",
+    "BACKITEM_DATA",
+    "ATTRIBUTE_DATA",
+    "COLLECT_DATA",
+    "SKILL_DATA",
+    "TASK_DATA",
+    "MAP_PROGRESS_DATA",
+}
+
+local GAME_DATA_ORDER = {
+    "COUNTDOWN_DATA",
+}
+
+local function OrderedDataKeys(map, preferredOrder)
+    local keys = {}
+    local used = {}
+    for _, key in ipairs(preferredOrder) do
+        if map[key] then
+            keys[#keys + 1] = key
+            used[key] = true
+        end
+    end
+    local remaining = {}
+    for key in pairs(map) do
+        if not used[key] then remaining[#remaining + 1] = key end
+    end
+    table.sort(remaining)
+    for _, key in ipairs(remaining) do keys[#keys + 1] = key end
+    return keys
+end
+
+local function ValidateDataOrder(result, category, preferredOrder)
+    local seen = {}
+    for _, key in ipairs(preferredOrder) do
+        if result[category][key] then
+            seen[key] = true
+        else
+            result.warnings[#result.warnings + 1] =
+                category .. " 顺序配置未找到数据项: " .. key
+        end
+    end
+    for key in pairs(result[category]) do
+        if not seen[key] then
+            result.warnings[#result.warnings + 1] =
+                category .. " 新增数据项将稳定追加: " .. key
+        end
+    end
+end
+
 function M.previewConstData()
     local result = M.genConstData()
     print("扫描 Package Meta: " .. #result.files .. " 个")
@@ -1899,9 +1917,19 @@ function M.writeConstData(result)
         f:write(string.format('    %s = "%s",\n', key, result.PLAYER_DATA_TYPE[key]))
     end
     f:write("}\n\n")
+    f:write("Const_Data.PLAYER_DATA_TYPE_ORDER = {\n")
+    for _, key in ipairs(OrderedDataKeys(result.PLAYER_DATA_TYPE, PLAYER_DATA_ORDER)) do
+        f:write(string.format('    "%s",\n', key))
+    end
+    f:write("}\n\n")
     f:write("Const_Data.GAME_DATA_TYPE = {\n")
-    for _, key in ipairs(SortedKeys(result.GAME_DATA_TYPE)) do
+    for _, key in ipairs(OrderedDataKeys(result.GAME_DATA_TYPE, GAME_DATA_ORDER)) do
         f:write(string.format('    %s = "%s",\n', key, result.GAME_DATA_TYPE[key]))
+    end
+    f:write("}\n\n")
+    f:write("Const_Data.GAME_DATA_TYPE_ORDER = {\n")
+    for _, key in ipairs(OrderedDataKeys(result.GAME_DATA_TYPE, GAME_DATA_ORDER)) do
+        f:write(string.format('    "%s",\n', key))
     end
     f:write("}\n\nreturn Const_Data\n")
     f:close()
@@ -1996,6 +2024,8 @@ function M.genEventDataChange()
             )
         end
     end
+    ValidateDataOrder(result, "PLAYER_DATA_TYPE", PLAYER_DATA_ORDER)
+    ValidateDataOrder(result, "GAME_DATA_TYPE", GAME_DATA_ORDER)
     return result
 end
 
@@ -2116,9 +2146,13 @@ local function BuildHeaderIndex(header, errors, sourcePath)
     return indexes
 end
 
-local function NormalizeConstName(rawName)
-    local constName = Trim(rawName):upper()
-    if not constName:match("^[A-Z_][A-Z0-9_]*$") then return nil end
+local function NormalizeConstName(rawName, nameCase)
+    local constName = Trim(rawName)
+    if nameCase ~= "preserve" then constName = constName:upper() end
+    if not constName:match("^[A-Za-z_][A-Za-z0-9_]*$") then return nil end
+    -- preserve 模式仍必须产出合法的 Lua 表字段。
+    local keywords = " and break do else elseif end false for function goto if in local nil not or repeat return then true until while "
+    if keywords:find(" " .. constName .. " ", 1, true) then return nil end
     return constName
 end
 
@@ -2146,10 +2180,14 @@ local function ValidateTableConstSpec(spec, index)
         source = spec.source:gsub("\\", "/"),
         keyColumn = spec.keyColumn or "---",
         nameColumn = spec.nameColumn or "ConstName",
+        nameCase = spec.nameCase or "upper",
         enumType = spec.enumType or (spec.name .. "ID"),
         output = spec.output
             or ("Script/Const/Generate/Const_" .. spec.name .. ".lua"),
     }
+    if normalized.nameCase ~= "upper" and normalized.nameCase ~= "preserve" then
+        return nil, "tableConsts[" .. index .. "].nameCase 必须是 upper 或 preserve"
+    end
     if not normalized.enumType:match("^[A-Za-z_][A-Za-z0-9_]*$") then
         return nil, "tableConsts[" .. index .. "].enumType 不是合法标识符"
     end
@@ -2220,7 +2258,7 @@ function M.buildTableConstArtifact(spec, rows, sourcePath, outputPath)
             local idText = Trim(row[keyIndex])
             local numericID = tonumber(idText)
             local itemID = numericID and math.tointeger(numericID) or nil
-            local constName = NormalizeConstName(row[nameIndex])
+            local constName = NormalizeConstName(row[nameIndex], spec.nameCase)
             if not itemID or itemID <= 0 then
                 artifact.errors[#artifact.errors + 1] = string.format(
                     "%s 第 %d 行 ID 必须是正整数: %s",

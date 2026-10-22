@@ -1,0 +1,75 @@
+{
+  "name": "framework-attribute",
+  "version": "0.1.0-draft",
+  "optional": true,
+  "requires": [
+    "framework-base"
+  ],
+  "sourceProject": "DayBreakDefenseDemoV1",
+  "contentRoot": "Project",
+  "description": "AttributeSystem 可选包；默认属性配置为空，不覆盖原生属性或在出生重生时强制满血。",
+  "files": [
+    {
+      "path": "Script/Package/AttributeSystem/Config/Config_Attribute.lua",
+      "sha256": "7e83aec0af5ec30dc3360891a77c686c6d387323f5c45abac094b4c0a88ed6fe"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/Data/Define_Attribute.lua",
+      "sha256": "76eb6ef321430b567e105f665f2e8e76b0f909d49182f6ecb6db83eccaa519ad"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/Data/PlayerData_Attribute.lua",
+      "sha256": "338de14b6de03c9415f8ee3c27467f3665ad46d5a906f32d1705fc462ecae3a7"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/Package_Meta.lua",
+      "sha256": "1c2b797407aa05da818b9ce38b97a87d63bc979ad9b32bd91cef82321f554974"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/Query/Query_Attribute.lua",
+      "sha256": "c1369fb084a5c01a46ea8ce86d1c9383adf20100d074cc5ae1174cfae4d61dda"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/Registry_AttributeSystem.lua",
+      "sha256": "6bc2763b65a570b75b3e3ff8226dbf1683456b44b24460983981ee8352012ef1"
+    },
+    {
+      "path": "Script/Package/AttributeSystem/System/System_Attribute.lua",
+      "sha256": "848e7b2d8975b1ad92ffc587dd138973a9f1376f3dc5ba881b73c81bc00661f9"
+    }
+  ],
+  "configuration": {
+    "path": "Script/Package/AttributeSystem/Config/Config_Attribute.lua",
+    "preserveExisting": true,
+    "persistedAttributes": {},
+    "resetHealthOnSpawn": false
+  },
+  "playerDataKeys": [
+    "attribute_data"
+  ],
+  "generateIndexes": [
+    "Package_Registry",
+    "Package_Meta_Index",
+    "Const_Data",
+    "Event_DataChange"
+  ],
+  "integrationRequirements": [
+    "遵循 oasis-project-deploy 的只读预检、报告及用户二次确认；默认不安装，与 GM 独立选装。",
+    "仅复制 Lua；无数据表、UI 或蓝图资产，不修改通用 Core 或 PropertyComponent。",
+    "空配置仍声明 attribute_data 空容器并纳入框架存档与复制，不应按零数据包跳过存档。",
+    "生成 ATTRIBUTE_DATA 数据常量和分类变更事件，确认实际控制器按常量复制 attribute_data。",
+    "原生/自定义属性枚举使用目标工程定义，不复制来源 game_attribute_type.lua；默认不依赖具体属性枚举。",
+    "只回写显式登记的属性；resetHealthOnSpawn 显式启用时才满血。普通修改由业务选择保存点。",
+    "GetStatus 反馈同步结果，失败可 SyncPawn 显式重试；事件总线不汇总业务返回值。",
+    "默认值补全保存失败保留待保存状态；属性写入错误尝试恢复并明确报告未能回滚的情况。",
+    "本次目标需新 PIE 验证空配置出生、重生不覆盖属性，以及组件数据就绪、包同步状态与两端启动。"
+  ],
+  "validation": {
+    "isolatedTest": "Tests/Test_AttributeSystem.lua",
+    "checksPassed": 24,
+    "engine": "mocked",
+    "runtimeVerified": false,
+    "generation": "actual GenKit scans with in-memory writes",
+    "notes": "Includes actual template PlayerDataCore, LifeCycle, PropertyComponent and controller replication contracts; not deployed to any project."
+  }
+}

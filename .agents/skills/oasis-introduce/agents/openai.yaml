@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oasis 框架与工具介绍"
+  short_description: "介绍 Oasis 通用 Lua 框架职责、开发工具用途、文档入口及常见开发流程"
+  default_prompt: "使用 $oasis-introduce 介绍 Oasis 框架与配套工具，说明模块职责、GenKit 和 PackageKit 的用途，以及推荐的开发流程和文档入口。"

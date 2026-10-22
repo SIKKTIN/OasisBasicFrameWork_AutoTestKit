@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oasis 框架部署"
+  short_description: "预检工程和 MCP，确认后完整部署，可选 GM、属性与技能包"
+  default_prompt: "使用 $oasis-project-deploy 先检查目标工程、Lua 环境和 MCP 连接并展示结果，等我确认后再完整部署及启动验收；GM、AttributeSystem 和 SkillSystem 按我的选择安装。"
