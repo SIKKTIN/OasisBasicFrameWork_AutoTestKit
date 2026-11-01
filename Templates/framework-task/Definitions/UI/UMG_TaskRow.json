@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "name": "UMG_TaskRow",
+  "assetPath": "Asset/UI/TaskSystem/UMG_TaskRow",
+  "rootType": "SizeBox",
+  "rootProperties": {
+    "bOverride_HeightOverride": "True",
+    "HeightOverride": "94"
+  },
+  "nodes": [
+    {
+      "type": "Button",
+      "name": "SelectButton",
+      "parent": "$root",
+      "properties": {
+        "BackgroundColor": "(R=0.08,G=0.17,B=0.28,A=1)"
+      }
+    },
+    {
+      "type": "CanvasPanel",
+      "name": "Content",
+      "parent": "SelectButton",
+      "properties": {}
+    },
+    {
+      "type": "Border",
+      "name": "SelectedMark",
+      "parent": "Content",
+      "properties": {
+        "BrushColor": "(R=1,G=0.70,B=0.12,A=1)",
+        "Visibility": "Collapsed"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          0,
+          5,
+          0
+        ],
+        "anchors": [
+          0,
+          0,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "NameText",
+      "parent": "Content",
+      "properties": {
+        "Text": "任务",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          18,
+          12,
+          18,
+          36
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 23
+    },
+    {
+      "type": "TextBlock",
+      "name": "StatusText",
+      "parent": "Content",
+      "properties": {
+        "Text": "可接取",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True",
+        "ColorAndOpacity": "(SpecifiedColor=(R=0.85,G=0.88,B=0.92,A=1),ColorUseRule=UseColor_Specified)"
+      },
+      "layout": {
+        "offsets": [
+          18,
+          53,
+          18,
+          28
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 17
+    }
+  ]
+}

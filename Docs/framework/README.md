@@ -13,3 +13,16 @@
 5. [开发、测试与调试指导](Development_Test_Debug_Guide.md)：DebugKit、AutoTestKit 和 CommandSystem 的使用流程。
 
 编辑器教程、引擎 API 和 LuaHelper 资料见 [绿洲开发资料导航](../OasisGuide.md)。工具使用方式见 [TestHelper 说明](../../README.md)。
+
+## 部署入口
+
+- [基础框架初装](../../.agents/skills/oasis-project-deploy/SKILL.md)：空白工程的完整接入，可同时选择内容包。
+- [可选包增装](../../.agents/skills/oasis-package-deploy/SKILL.md)：已有框架工程添加 GM、AttributeSystem、SkillSystem 或 TaskSystem，保留现有业务配置与数据。
+- [增装 Skill 开发记录](../dev/可选包增装Skill.md)：范围、实现及验证结果。
+
+## 可选任务包
+
+- [TaskSystem 部署与接口](../../Templates/framework-task/README.md)：默认空配置、基础 UI、独立示例与奖励接入契约。
+- [任务包开发与 TempleTest 接入记录](../dev/任务系统可选包与TempleTest接入.md)：本次实施进度、离线检查和实际验收边界。
+
+- [TaskSystem 实际接入验收](TaskSystem_Integration_Verification.md)：TempleTest 的实机流程、截图、原生存档与发布环境边界。

@@ -1,0 +1,526 @@
+{
+  "formatVersion": 1,
+  "name": "UMG_TaskPanel",
+  "assetPath": "Asset/UI/TaskSystem/UMG_TaskPanel",
+  "rootType": "CanvasPanel",
+  "rootProperties": {
+    "Visibility": "SelfHitTestInvisible"
+  },
+  "nodes": [
+    {
+      "type": "Button",
+      "name": "EntryButton",
+      "parent": "$root",
+      "properties": {
+        "BackgroundColor": "(R=0.08,G=0.17,B=0.28,A=1)"
+      },
+      "layout": {
+        "offsets": [
+          26,
+          -240,
+          100,
+          62
+        ],
+        "anchors": [
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "EntryText",
+      "parent": "EntryButton",
+      "properties": {
+        "Text": "任务",
+        "Justification": "Center",
+        "Visibility": "SelfHitTestInvisible"
+      }
+    },
+    {
+      "type": "CanvasPanel",
+      "name": "Window",
+      "parent": "$root",
+      "properties": {
+        "Visibility": "Collapsed"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "anchors": [
+          0.07,
+          0.08,
+          0.93,
+          0.92
+        ]
+      }
+    },
+    {
+      "type": "Border",
+      "name": "Background",
+      "parent": "Window",
+      "properties": {
+        "BrushColor": "(R=0.045,G=0.095,B=0.16,A=0.98)",
+        "Visibility": "Visible"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Border",
+      "name": "Header",
+      "parent": "Window",
+      "properties": {
+        "BrushColor": "(R=0.08,G=0.17,B=0.28,A=1)",
+        "Visibility": "SelfHitTestInvisible"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          0,
+          0,
+          64
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "HeaderText",
+      "parent": "Window",
+      "properties": {
+        "Text": "任务",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          24,
+          12,
+          260,
+          48
+        ],
+        "anchors": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "fontSize": 32
+    },
+    {
+      "type": "Button",
+      "name": "CloseButton",
+      "parent": "Window",
+      "properties": {
+        "BackgroundColor": "(R=0.08,G=0.17,B=0.28,A=1)"
+      },
+      "layout": {
+        "offsets": [
+          -62,
+          8,
+          52,
+          48
+        ],
+        "anchors": [
+          1,
+          0,
+          1,
+          0
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "CloseText",
+      "parent": "CloseButton",
+      "properties": {
+        "Text": "×",
+        "Justification": "Center",
+        "Visibility": "SelfHitTestInvisible"
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "ListHeading",
+      "parent": "Window",
+      "properties": {
+        "Text": "任务列表",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          20,
+          80,
+          250,
+          36
+        ],
+        "anchors": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "fontSize": 23
+    },
+    {
+      "type": "ScrollBox",
+      "name": "TaskList",
+      "parent": "Window",
+      "properties": {},
+      "layout": {
+        "offsets": [
+          18,
+          126,
+          12,
+          18
+        ],
+        "anchors": [
+          0,
+          0,
+          0.33,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "EmptyText",
+      "parent": "Window",
+      "properties": {
+        "Text": "暂无任务",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          22,
+          140,
+          22,
+          80
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 24
+    },
+    {
+      "type": "CanvasPanel",
+      "name": "Detail",
+      "parent": "Window",
+      "properties": {},
+      "layout": {
+        "offsets": [
+          12,
+          78,
+          22,
+          18
+        ],
+        "anchors": [
+          0.35,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "TitleText",
+      "parent": "Detail",
+      "properties": {
+        "Text": "任务详情",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          0,
+          100,
+          36
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 26
+    },
+    {
+      "type": "TextBlock",
+      "name": "StateText",
+      "parent": "Detail",
+      "properties": {
+        "Text": "",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True",
+        "ColorAndOpacity": "(SpecifiedColor=(R=0.55,G=0.9,B=0.7,A=1),ColorUseRule=UseColor_Specified)"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          39,
+          10,
+          24
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 18
+    },
+    {
+      "type": "TextBlock",
+      "name": "DescriptionText",
+      "parent": "Detail",
+      "properties": {
+        "Text": "",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          69,
+          0,
+          48
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "fontSize": 18
+    },
+    {
+      "type": "TextBlock",
+      "name": "GoalsHeading",
+      "parent": "Detail",
+      "properties": {
+        "Text": "任务目标",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          124,
+          250,
+          28
+        ],
+        "anchors": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "fontSize": 21
+    },
+    {
+      "type": "ScrollBox",
+      "name": "GoalsScroll",
+      "parent": "Detail",
+      "properties": {},
+      "layout": {
+        "offsets": [
+          0,
+          158,
+          0,
+          210
+        ],
+        "anchors": [
+          0,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "ObjectivesText",
+      "parent": "GoalsScroll",
+      "properties": {
+        "Text": "",
+        "AutoWrapText": "True",
+        "Visibility": "SelfHitTestInvisible"
+      },
+      "fontSize": 20
+    },
+    {
+      "type": "TextBlock",
+      "name": "RewardsHeading",
+      "parent": "Detail",
+      "properties": {
+        "Text": "任务奖励",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          -200,
+          250,
+          30
+        ],
+        "anchors": [
+          0,
+          1,
+          0,
+          1
+        ]
+      },
+      "fontSize": 21
+    },
+    {
+      "type": "ScrollBox",
+      "name": "RewardsScroll",
+      "parent": "Detail",
+      "properties": {
+        "Orientation": "Orient_Horizontal"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          -160,
+          0,
+          96
+        ],
+        "anchors": [
+          0,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "HorizontalBox",
+      "name": "RewardsBox",
+      "parent": "RewardsScroll",
+      "properties": {}
+    },
+    {
+      "type": "TextBlock",
+      "name": "NoRewardText",
+      "parent": "Detail",
+      "properties": {
+        "Text": "本任务无额外奖励",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          -150,
+          380,
+          70
+        ],
+        "anchors": [
+          0,
+          1,
+          0,
+          1
+        ]
+      },
+      "fontSize": 19
+    },
+    {
+      "type": "TextBlock",
+      "name": "FeedbackText",
+      "parent": "Detail",
+      "properties": {
+        "Text": "",
+        "Visibility": "SelfHitTestInvisible",
+        "AutoWrapText": "True"
+      },
+      "layout": {
+        "offsets": [
+          0,
+          -62,
+          236,
+          60
+        ],
+        "anchors": [
+          0,
+          1,
+          1,
+          1
+        ]
+      },
+      "fontSize": 19
+    },
+    {
+      "type": "Button",
+      "name": "ActionButton",
+      "parent": "Detail",
+      "properties": {
+        "BackgroundColor": "(R=1,G=0.70,B=0.12,A=1)"
+      },
+      "layout": {
+        "offsets": [
+          -220,
+          -62,
+          220,
+          58
+        ],
+        "anchors": [
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "TextBlock",
+      "name": "ActionText",
+      "parent": "ActionButton",
+      "properties": {
+        "Text": "接取任务",
+        "Justification": "Center",
+        "ColorAndOpacity": "(SpecifiedColor=(R=0.04,G=0.04,B=0.04,A=1))",
+        "Visibility": "SelfHitTestInvisible"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "table": "DT_UI_Config",
+  "rowName": "1010",
+  "row": {
+    "Name": "TaskSystem",
+    "AssetPath": "Asset/UI/TaskSystem/UMG_TaskPanel.UMG_TaskPanel_C",
+    "Zorder": "90",
+    "IsSingleton": true,
+    "Slot": "UI.UISlot.MainUISlot_High",
+    "IsPreLoad": false
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oasis 可选包增装"
+  short_description: "为已有基础框架的工程增装可选包，保留业务配置并完成接入验收"
+  default_prompt: "使用 $oasis-package-deploy 检查指定工程，为其增装我选择的可选包，保留已有业务配置，展示方案后完成接入和实机验收。"

@@ -9,7 +9,8 @@
 | 新对话开始前，让 AI 了解项目，再接续开发 | [oasis-project-init](.agents/skills/oasis-project-init/SKILL.md) | 阅读文档、约定和进度，核对相关实现，说明当前理解 |
 | 初次了解这套框架，或查询工具用途 | [oasis-introduce](.agents/skills/oasis-introduce/SKILL.md) | 介绍架构、模块职责、工具和文档入口 |
 | 检查项目目录、Lua 解释器等配置 | [oasis-environment](.agents/skills/oasis-environment/SKILL.md) | 按必需与可选分类报告配置状态，引导补全必需项 |
-| 向已创建的空白 UGC 工程接入框架 | [oasis-project-deploy](.agents/skills/oasis-project-deploy/SKILL.md) | 先预检，用户确认后完整部署并完成实际启动验收 |
+| 向空白工程首次部署框架 | [oasis-project-deploy](.agents/skills/oasis-project-deploy/SKILL.md) | 先预检，用户确认后完整部署，可同时选装内容包 |
+| 为已有基础框架的工程增装可选包 | [oasis-package-deploy](.agents/skills/oasis-package-deploy/SKILL.md) | 检查依赖与冲突，保留业务配置，增量接入并完成实际启动验收 |
 
 **初始化用于建立当前对话的项目上下文；部署用于把框架接入工程。** 每个新对话开始工作前使用初始化；只有需要接入框架时才使用部署。介绍和环境检测按需调用，无需每次执行全部 Skill。
 
@@ -68,15 +69,17 @@ $oasis-environment
 
 ### 空白工程：部署框架
 
-先在编辑器创建并打开目标空白 UGC 工程，准备 Lua 5.4 和可连接该工程的编辑器 MCP 服务，再调用：
+先在编辑器创建并打开目标空白 UGC 工程，准备 Lua 5.4，再调用下面的 Skill。编辑器 MCP 是完整部署的必需前提；尚未安装或配置时，Skill 会先检查状态，并按 [MCP 安装、配置与连接指导](.agents/skills/oasis-project-deploy/references/mcp-setup.md) 引导准备。只有验证实际连接目标工程后，才进入框架部署：
 
 ```text
 $oasis-project-deploy
 目标项目：E:\UGCProjects\MyGame
-请先预检并展示结果。选装 GM，不安装 AttributeSystem 和 SkillSystem。
+请先预检并展示结果。选装 GM，不安装 AttributeSystem、SkillSystem 和 TaskSystem。
 ```
 
-部署分为两阶段：
+部署先准备 MCP，再分为两阶段：
+
+0. **MCP 环境检查与准备。** 区分未安装、未配置、服务未启动和编辑器连接问题，按已核实来源指导安装与配置，并实际读取工程上下文。需要修改环境时先展示具体改动并核对授权；MCP 准备完成不代表框架已部署。
 
 1. **只读预检并等待确认。** 展示目标工程、MCP 实际连接与当前工程、Lua 验证结果、模板及入口检查、冲突和完整部署计划。用户查看报告并明确确认后，才开始修改。
 2. **完整部署与验收。** 项目外备份、部署 Core 和基础文件、按 JSON 创建 UI 表、创建并挂载玩家属性组件、同步实际 GameMode / GameState / PlayerController / Pawn 入口、运行 GenKit 生成注册清单，最后新启动 PIE 验证并清理临时探针。
@@ -90,8 +93,21 @@ $oasis-project-deploy
 | [GM](Templates/framework-gm/README.md) | 开发面板、诊断指令、自动测试入口和控制器 RPC 适配 | 通用开发工具 |
 | [AttributeSystem](Templates/framework-attribute/README.md) | 可配置属性持久化与 Pawn 同步 | 空属性配置，保留编辑器数值，不强制满血 |
 | [SkillSystem](Templates/framework-skill/README.md) | 技能注册、状态存档、实例管理和重生恢复 | 空技能注册表，不携带默认技能或业务资源 |
+| [TaskSystem](Templates/framework-task/README.md) | 接取、累计目标、存档、领奖接口和基础任务面板 | 空任务配置；默认带 UI，可仅装逻辑；示例单独选择 |
 
 部署使用本次明确指定的目标工程，不修改工具的 `setting.json`。模板范围、运行契约与验证状态见 [framework-base 说明](Templates/framework-base/README.md)。
+
+### 已有框架：增装可选包
+
+后续只添加选中的包时使用独立增装 Skill：
+
+```text
+$oasis-package-deploy
+目标项目：E:\UGCProjects\MyGame
+增装 TaskSystem，带基础 UI，不安装示例。先检查依赖、现有配置和冲突，展示增装方案。
+```
+
+支持上表四个可选包。Skill 核对实际入口、已有存档和生成清单，展示具体变更并核对授权后执行，保留现有业务配置。MCP 未就绪时先指导准备；基础框架不完整时列出差异，不静默重新安装。任务奖励接口需按项目接入，示例独立选择。流程和验收边界见 [可选包增装 Skill](.agents/skills/oasis-package-deploy/SKILL.md)。
 
 ## 让 Skill 在其他项目中可用
 
@@ -108,7 +124,7 @@ New-Item -ItemType Junction `
     -Target (Join-Path $repoRoot '.agents\skills\oasis-project-init')
 ```
 
-其他三个 Skill 同样按各自名称建立链接。移动仓库后需更新链接目标；技能通过真实路径定位工具仓库。Codex 会自动检测技能变化，未出现时先检查目录、SKILL.md 和链接目标，再尝试重启。发现路径与调用方式参考 [OpenAI 官方 Skill 文档](https://learn.chatgpt.com/docs/build-skills)。
+其他 Skill 同样按各自名称建立链接。移动仓库后需更新链接目标；技能通过真实路径定位工具仓库。Codex 会自动检测技能变化，未出现时先检查目录、SKILL.md 和链接目标，再尝试重启。发现路径与调用方式参考 [OpenAI 官方 Skill 文档](https://learn.chatgpt.com/docs/build-skills)。
 
 ## 工具配置与手动运行
 
@@ -131,7 +147,7 @@ GenKit 测试不写入生成文件；`Test_TableConsts.lua` 需要配置中的�
 
 | 目录 | 内容 |
 | --- | --- |
-| [.agents/skills/](.agents/skills/) | 四个 Skill 的指令与配套参考 |
+| [.agents/skills/](.agents/skills/) | 项目初始化、介绍、环境检查、框架初装与可选包增装 Skill |
 | [Templates/](Templates/) | 必需框架模板、独立可选包、资产定义及模板自身测试 |
 | [GenKit/](GenKit/) | 注册表、索引、数据常量与事件等代码生成工具 |
 | [PackageKit/](PackageKit/) | Package 规范检查及编辑器资产操作辅助脚本 |

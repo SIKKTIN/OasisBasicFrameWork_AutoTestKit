@@ -1,6 +1,6 @@
 # framework-base 模板草稿
 
-本模板是完整部署的必需内容包，提供通用 Lua Core、四个引擎入口、数据表和属性组件定义。清单、版本和 SHA-256 见 [manifest.json](manifest.json)。部署先只读检查目标工程、Lua 环境与 MCP 实际连接，展示结果及计划，等待用户二次确认后，统一执行文件部署、编辑器资产创建、实际入口同步、GenKit 生成与本次 PIE 验收；GM、AttributeSystem 与 SkillSystem 独立可选。“仅计划”列出相同完整流程而不执行，不再提供其他部署范围。
+本模板是完整部署的必需内容包，提供通用 Lua Core、四个引擎入口、数据表和属性组件定义。清单、版本和 SHA-256 见 [manifest.json](manifest.json)。部署先只读检查目标工程、Lua 环境与 MCP 实际连接，展示结果及计划，等待用户二次确认后，统一执行文件部署、编辑器资产创建、实际入口同步、GenKit 生成与本次 PIE 验收；GM、AttributeSystem、SkillSystem 与 TaskSystem 独立可选。“仅计划”列出相同完整流程而不执行，不再提供其他部署范围。
 
 ## 部署内容
 
@@ -277,3 +277,7 @@ TempleTest 历史上已完成实际入口同步、目标 Core 清单生成和 PI
 ## 可选 SkillSystem
 
 [framework-skill](../framework-skill/README.md) 提供默认空注册表的技能包，不携带技能 ID 或资源，与 GM、AttributeSystem 独立选装。skill_data 空容器由现有存档和复制流程处理；安装后生成包、Meta、数据常量和分类变更事件，预检确认及本次 PIE 验收按部署 skill 执行。
+
+## 可选 TaskSystem
+
+[framework-task](../framework-task/README.md) 提供空配置任务包与基础任务面板，可显式只装逻辑。奖励预留项目接口，不依赖货币、背包或 GM。示例任务及模拟奖励单独选用；部署时保留既有基础框架，接入实际 PC 薄适配，重新生成包、Meta 和数据索引，并完成当次运行验收。

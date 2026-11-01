@@ -1,0 +1,170 @@
+{
+  "name": "framework-task",
+  "version": "0.1.0",
+  "optional": true,
+  "requires": [
+    "framework-base"
+  ],
+  "contentRoot": "Project",
+  "description": "独立任务状态、进度、持久化与奖励接口；默认空配置，可选基础UI。",
+  "files": [
+    {
+      "path": "Script/Config/Package/TaskSystem/Config_Task.lua",
+      "sha256": "98ac47b8b61132ff18a5a9b7f462b9b3066f68133bcfa3db954922f4d2bfe462",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Controller_TaskSystem.lua",
+      "sha256": "f41ba3d598c0d8182fed1c85a5443e0183ff5d60a1b93c65a9e09ad81bf5a5f5",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Data/Define_Task.lua",
+      "sha256": "4e89add3d82ada315386bb705e1b0c775542c8e2a03a32a1cd01d331fe412db8",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Data/PlayerData_Task.lua",
+      "sha256": "3943e1524a1f5823fa4387244cfb5b6aa961dac1a4a6128f4ca56509130a7499",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Package_Meta.lua",
+      "sha256": "5565840f5bdde74dbc54ff0b9038ddee9bb8307c86e556be80e586ceab350877",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Query/Query_Task.lua",
+      "sha256": "80c4a072d4fcc7e0c357c191cf9ccd4ddc8772b39df10b1e27e301391b73c3c3",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/README.md",
+      "sha256": "639f4505a9922909b46ca7c22e270e7755fc31ada9bd77e18f7904b847400ea0",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/Registry_TaskSystem.lua",
+      "sha256": "1e9e5e9c7170f1baf6ac789429d46a13ded6796a77c58729c500822ffe2c904e",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/Package/TaskSystem/System/System_Task.lua",
+      "sha256": "147bcb7ad6730c60dad7b9f6c66ba0df39603e1ff38c3ab84a9fd7bca3ad074d",
+      "uiOnly": false
+    },
+    {
+      "path": "Script/UI/TaskSystem/UMG_TaskPanel.lua",
+      "sha256": "02c932fbbf3e2f257b98fca761b17c300d4aee4b63433d3679e6521af7184d83",
+      "uiOnly": true
+    },
+    {
+      "path": "Script/UI/TaskSystem/UMG_TaskReward.lua",
+      "sha256": "bdc3f5058c840609b78040fbfaa2b676090abc2eeb128093d24e2ae80aff50e1",
+      "uiOnly": true
+    },
+    {
+      "path": "Script/UI/TaskSystem/UMG_TaskRow.lua",
+      "sha256": "f99780b85f2390358f751fc6c5c5371dd5507b44d1d383d2c1832ea7add7f493",
+      "uiOnly": true
+    }
+  ],
+  "definitions": [
+    {
+      "path": "Definitions/UI/TaskSystem.json",
+      "sha256": "a6a59e06b2931d8b01099c7bffd47edc5894f42cf9d4855209956bc7f3e54d46"
+    },
+    {
+      "path": "Definitions/UI/UMG_TaskPanel.json",
+      "sha256": "e008d314044047d19cc71871450871fbce6c6f7555f5a8d156fc5334bdb525bd"
+    },
+    {
+      "path": "Definitions/UI/UMG_TaskReward.json",
+      "sha256": "b68481ccbfda1d56f3b7f27bfbd4634392cc0451fa6dfdbe210a7badad430aeb"
+    },
+    {
+      "path": "Definitions/UI/UMG_TaskRow.json",
+      "sha256": "7542c298fdf1d11f72a243a3a16c0c593a38e6cd66943e7c26bbc8b4d4862fb1"
+    }
+  ],
+  "ui": {
+    "default": true,
+    "mode": "editor-build",
+    "widgets": [
+      "UMG_TaskPanel",
+      "UMG_TaskRow",
+      "UMG_TaskReward"
+    ],
+    "editorHelper": "PackageKit/editor/task_template.py",
+    "editorHelperSha256": "ff1662b541aa1d56963ff62a7ab3ba6f4c0359caf7708066739c8bb9ade083ad",
+    "definitionRoot": "Definitions/UI",
+    "rowDefinition": "Definitions/UI/TaskSystem.json",
+    "rowID": "1010",
+    "logicOnly": "skip uiOnly payloads and asset/table steps; Config_Task.ui.enabled=false"
+  },
+  "controllerAdapter": {
+    "module": "Script.Package.TaskSystem.Controller_TaskSystem",
+    "call": "require(\"Script.Package.TaskSystem.Controller_TaskSystem\").Attach(actualController)",
+    "placement": "before final return of actual bound PlayerController, preserve existing RPCs/OnRep/EndPlay"
+  },
+  "playerDataKeys": [
+    "task_data"
+  ],
+  "generateIndexes": [
+    "Package_Registry",
+    "Package_Meta_Index",
+    "Const_Data",
+    "Event_DataChange",
+    "Project_Globals"
+  ],
+  "rewardContract": {
+    "registration": "RegisterRewardProvider",
+    "required": [
+      "name",
+      "idempotent=true",
+      "Validate",
+      "Query",
+      "Grant"
+    ],
+    "statuses": [
+      "granted",
+      "not-found",
+      "pending",
+      "failed",
+      "unknown"
+    ],
+    "transactionGuarantee": "Project provider owns durable deduplication and partial-payout recovery; no generic engine transaction guarantee."
+  },
+  "example": {
+    "default": false,
+    "config": "Examples/Config_Task.lua",
+    "contentRoot": "Examples/Project",
+    "dataKey": "task_example_data",
+    "optionalGMCommand": "TaskExample.Advance",
+    "notes": "Separate simulated balances and receipts, never native currency or items."
+  },
+  "validation": {
+    "isolatedTest": "Tests/Test_TaskSystem.lua",
+    "checksPassed": 28,
+    "engine": "TempleTest UGCEditor mobile PIE",
+    "runtimeVerified": true,
+    "target": "TempleTest",
+    "editorHelperTests": "Tests/Test_TaskEditor.py",
+    "editorHelperChecksPassed": 6,
+    "generationChecksPassed": 6,
+    "packageChecksPassed": 2,
+    "generationTest": "Tests/Test_Generation.lua",
+    "runtimeEvidence": "Docs/framework/TaskSystem_Integration_Verification.md",
+    "sessions": [
+      "_dkfy0sqlfsba77",
+      "_dkfy0sqlfsbz93",
+      "_dkfy0sqlfscapx"
+    ],
+    "limitations": [
+      "Published-environment cross-match persistence not verified; engine excludes cross-match persistence in PIE.",
+      "Real project rewards require a durable idempotent provider; examples are simulated.",
+      "Desktop synthetic mouse input did not reach native widgets; manual close confirmed by user; UI callbacks and real RPCs verified."
+    ],
+    "isolatedEngine": "mocked UE/archive; real template DataCore and EventBus"
+  }
+}
