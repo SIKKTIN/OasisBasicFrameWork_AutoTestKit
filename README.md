@@ -1,18 +1,19 @@
 # OasisBasicFrameWork_AutoTestKit
 
-面向绿洲启元编辑器 UGC 项目的通用 Lua 框架与开发辅助工具。日常通过 Skill 完成项目理解、环境检测和框架部署；GenKit、PackageKit、模板和文档为这些流程提供支持。
+面向绿洲启元编辑器 UGC 项目的通用 Lua 框架与开发辅助工具。通过 Skill 完成项目理解、文档维护、环境检测、框架初装和可选包增装；GenKit、PackageKit、模板和统一规范为这些流程提供支持。
 
 ## 先选择需要的 Skill
 
 | 你的需求 | Skill | 执行结果 |
 | --- | --- | --- |
 | 新对话开始前，让 AI 了解项目，再接续开发 | [oasis-project-init](.agents/skills/oasis-project-init/SKILL.md) | 阅读文档、约定和进度，核对相关实现，说明当前理解 |
+| Oasis 项目日常开发时维护文档，或建立、整理项目资料 | [oasis-document](.agents/skills/oasis-document/SKILL.md) | 主动匹配开发事项，维护计划、设计与内容、实施结果和进度索引 |
 | 初次了解这套框架，或查询工具用途 | [oasis-introduce](.agents/skills/oasis-introduce/SKILL.md) | 介绍架构、模块职责、工具和文档入口 |
 | 检查项目目录、Lua 解释器等配置 | [oasis-environment](.agents/skills/oasis-environment/SKILL.md) | 按必需与可选分类报告配置状态，引导补全必需项 |
 | 向空白工程首次部署框架 | [oasis-project-deploy](.agents/skills/oasis-project-deploy/SKILL.md) | 先预检，用户确认后完整部署，可同时选装内容包 |
 | 为已有基础框架的工程增装可选包 | [oasis-package-deploy](.agents/skills/oasis-package-deploy/SKILL.md) | 检查依赖与冲突，保留业务配置，增量接入并完成实际启动验收 |
 
-**初始化用于建立当前对话的项目上下文；部署用于把框架接入工程。** 每个新对话开始工作前使用初始化；只有需要接入框架时才使用部署。介绍和环境检测按需调用，无需每次执行全部 Skill。
+**初始化负责理解项目，文档维护跟随日常开发，部署负责接入框架或可选包。** 新对话开始开发前使用初始化；开发中由 `oasis-document` 按任务匹配维护记录，也可显式调用。首次接入使用 `oasis-project-deploy`，已有基础框架后增装使用 `oasis-package-deploy`。介绍和环境检测按需调用，无需每次执行全部 Skill。
 
 ## 如何使用
 
@@ -35,6 +36,37 @@ $oasis-project-init
 ```
 
 Skill 会先读文档，再核对相关代码和现有修改，简要说明架构规则、当前状态和不确定项。仅要求初始化时只读并汇报；已明确后续任务时，建立上下文后继续该任务。目标目录可在当前工作目录能够唯一确定时省略；Lua、CSV 和 MCP 未配置不影响本地上下文阅读。
+
+### 日常开发：维护项目文档
+
+`oasis-document` 支持在已确定的 Oasis 功能开发、修复、优化和重构任务中主动选用，不必每次手动点名；也可以显式调用：
+
+```text
+$oasis-document
+目标项目：E:\UGCProjects\MyGame
+为本次任务整理开发计划，完成修改后同步相关设计、验证结果和进度。
+```
+
+规则读取仓库的 [Oasis 项目文档规范](Docs/framework/Project_Documentation_Guide.md)，不依赖外部文档 Skill。仅问答、只读检查和仅初始化不自动写文档；部署预检阶段仍须保持只读。主动选用不是后台文件监听，实际效果需在开发请求中观察。
+
+维护顺序为：先查导航、相关设计和已有事项；实施前新增或接续计划；实施中记录实际调整；结束后补充验证结果、未完成项并更新进度。设计或具体内容发生变化时同步负责的文档，同一事项不重复建计划。小改动简写，不为套结构生成整套空文档。
+
+### 项目文档放在哪里
+
+以下默认路径相对于**目标 UGC 工程**，不是 TestHelper 工具仓库：
+
+| 路径 | 内容 |
+| --- | --- |
+| `Docs/目录.md` | 项目文档导航、各分类的实际路径与阅读顺序 |
+| `Docs/design/` | 项目设计、系统规则和玩法流程 |
+| `Docs/content/` | 任务、物品、敌人、关卡等具体内容 |
+| `Docs/dev/目录.md` | 开发事项、状态与记录链接，即项目进度入口 |
+| `Docs/dev/` | 一件事项一份文档，合并计划、实施过程和验证结果 |
+| `Docs/concepts/` | 按需保存概念图、草图与参考方案 |
+
+已有 `docs`、`Docs/module`、`Docs/plan` 或等价导航时优先复用，在项目入口明确职责和路径；缺少资料时报告缺失，不把包 README 或模板说明当成完整项目设计。初始化保持只读，部署在预检确认后才建立必要导航并记录接入过程。实际实现、待实施计划和未验证范围分别说明。
+
+TestHelper 自身的通用规范保存在 [Docs/framework/](Docs/framework/README.md)，框架开发进度保存在 [Docs/dev/目录.md](Docs/dev/目录.md)。目标项目的业务资料和部署记录仍写在目标工程，避免两处维护相同正文。
 
 ### 初次了解：介绍框架与工具
 
@@ -147,12 +179,15 @@ GenKit 测试不写入生成文件；`Test_TableConsts.lua` 需要配置中的�
 
 | 目录 | 内容 |
 | --- | --- |
-| [.agents/skills/](.agents/skills/) | 项目初始化、介绍、环境检查、框架初装与可选包增装 Skill |
+| [.agents/skills/](.agents/skills/) | 项目初始化、文档维护、介绍、环境检查、框架初装与可选包增装 Skill |
 | [Templates/](Templates/) | 必需框架模板、独立可选包、资产定义及模板自身测试 |
 | [GenKit/](GenKit/) | 注册表、索引、数据常量与事件等代码生成工具 |
 | [PackageKit/](PackageKit/) | Package 规范检查及编辑器资产操作辅助脚本 |
 | [ExternalConfig/](ExternalConfig/) | 共享路径配置加载 |
 | [Docs/framework/](Docs/framework/README.md) | 通用框架架构、Package 规范和开发指南 |
+| [Docs/dev/目录.md](Docs/dev/目录.md) | TestHelper 开发事项及进度、实施与验证记录 |
 | [Docs/](Docs/OasisGuide.md) | 绿洲编辑器教程、API 与 LuaHelper 资料导航 |
 
 框架规范从 [项目架构思想](Docs/framework/Project_Architecture.md) 开始；编写业务包时参阅 [Package 目录规范](Docs/framework/Package_Structure.md)、[Meta 契约](Docs/framework/Package_Meta.md) 和 [DataCore 指导](Docs/framework/DataCore_Guide.md)。
+
+目标项目的设计、具体内容、开发计划、进度与验证记录按 [Oasis 项目文档规范](Docs/framework/Project_Documentation_Guide.md) 组织。规范由本仓库维护，不要求安装外部文档 Skill；已有项目优先复用现有导航与目录。TestHelper 自身的开发进度见 [框架开发事项](Docs/dev/目录.md)。

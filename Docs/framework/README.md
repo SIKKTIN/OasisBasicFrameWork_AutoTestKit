@@ -11,8 +11,17 @@
 3. [Package_Meta 规范](Package_Meta.md)：包身份、依赖与数据声明契约。
 4. [DataCore 数据核心指导](DataCore_Guide.md)：玩家数据与全局游戏数据的注册、读写和通知。
 5. [开发、测试与调试指导](Development_Test_Debug_Guide.md)：DebugKit、AutoTestKit 和 CommandSystem 的使用流程。
+6. [Oasis 项目文档规范](Project_Documentation_Guide.md)：目标项目的设计、具体内容、开发计划、进度与验证记录的路径和维护规则。
 
 编辑器教程、引擎 API 和 LuaHelper 资料见 [绿洲开发资料导航](../OasisGuide.md)。工具使用方式见 [TestHelper 说明](../../README.md)。
+
+## 项目文档与开发记录
+
+[Oasis 项目文档规范](Project_Documentation_Guide.md) 由本仓库独立维护，不依赖外部文档 Skill。目标项目默认通过 `Docs/目录.md` 导航设计与内容，通过 `Docs/dev/目录.md` 查阅开发进度；已有项目可沿用其实际路径并声明对应职责。
+
+本仓库自身的事项见 [框架开发事项](../dev/目录.md)。文档规范已接入上下文初始化、基础部署和可选包增装三个 Skill，具体变更与验证边界见 [接入记录](../dev/文档规范接入现有Skill.md)。
+
+日常开发的计划、设计/内容同步、实施结果和进度维护由 [oasis-document](../../.agents/skills/oasis-document/SKILL.md) 提供执行入口，支持任务匹配时主动选用；仅阅读与各部署流程的原有写入边界保持不变。
 
 ## 部署入口
 

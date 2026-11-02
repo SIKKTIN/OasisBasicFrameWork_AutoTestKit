@@ -1,0 +1,6 @@
+interface:
+  display_name: "Oasis 项目文档维护"
+  short_description: "绿洲项目开发时维护计划、设计与实施记录，同步验证结果和进度索引"
+  default_prompt: "使用 $oasis-document 按 TestHelper 的文档规范，在本次 Oasis 开发中维护计划、相关设计与内容、实施结果和进度索引。"
+policy:
+  allow_implicit_invocation: true
